@@ -14,7 +14,12 @@ utilisée au pouce.
 
 - 4 anneaux de progression : calories, protéines, glucides, lipides (total du jour vs objectif).
 - Objectifs éditables (stockés dans `targets`).
-- 6 raccourcis pour ajouter une entrée en un tap (shake, poulet, œufs, avoine, riz, bière).
+- **Recherche d'aliments** dans Open Food Facts : tu tapes un nom, tu choisis la quantité en
+  grammes, les macros sont calculées. Gratuit, sans clé d'API.
+- **Plats composés** : additionner plusieurs aliments en une recette, enregistrée en favori
+  et réutilisable en un tap.
+- Trois sources d'ajout rapide : **Raccourcis** (6 presets figés), **Favoris** (tes plats),
+  **Récents** (tout ce que tu as saisi ces 30 derniers jours).
 - Saisie manuelle : nom + kcal / P / G / L.
 - Liste des entrées du jour, avec suppression.
 - Navigation entre les jours (flèches ‹ ›), pour consulter ou compléter un jour passé.
@@ -55,9 +60,10 @@ npm run preview  # sert dist/ en local pour vérifier
 
 2. **Créer les tables** : ouvrir _SQL Editor_ → _New query_, coller le contenu de
    [`supabase/migrations/0001_init.sql`](supabase/migrations/0001_init.sql), puis _Run_.
-   Le script crée les 3 tables (`targets`, `food_entries`, `weights`), active RLS et pose
-   les policies : chaque ligne n'est lisible et modifiable que par son propriétaire
-   (`user_id = auth.uid()`).
+   Recommencer avec [`0002_favorites.sql`](supabase/migrations/0002_favorites.sql).
+   Les scripts créent les 4 tables (`targets`, `food_entries`, `weights`, `favorites`),
+   activent RLS et posent les policies : chaque ligne n'est lisible et modifiable que par
+   son propriétaire (`user_id = auth.uid()`).
 
 3. **Récupérer les clés** : _Project Settings_ → _API_. Reporter dans `.env` :
 
@@ -131,11 +137,23 @@ Configuration_ → _Site URL_.
 ```
 src/
   components/    écrans et UI (Auth, TodayScreen, WeightScreen, Ring, …)
-  hooks/         accès aux données (useSession, useTargets, useFoodEntries, useWeights, useHistory)
-  lib/           client Supabase, types, helpers de date, presets
+  hooks/         accès aux données (useSession, useTargets, useFoodEntries, useWeights,
+                 useFavorites, useRecents, useHistory)
+  lib/           client Supabase, types, helpers de date, presets, Open Food Facts
 public/          manifest, service worker, icônes
-supabase/        migration SQL à coller dans le SQL Editor
+supabase/        migrations SQL à coller dans le SQL Editor
 ```
+
+## Open Food Facts
+
+La recherche d'aliments interroge [Open Food Facts](https://fr.openfoodfacts.org), base
+collaborative et gratuite, directement depuis le navigateur (`src/lib/openfoodfacts.ts`) —
+aucune clé, aucun proxy, rien à configurer.
+
+Deux limites à connaître : les produits sans calories renseignées sont filtrés, et les
+produits frais non emballés (viande au détail, légumes en vrac) y sont mal couverts. Pour
+ceux-là, la saisie manuelle reste le bon outil — et une fois saisis, ils remontent dans
+l'onglet Récents.
 
 Les dates sont manipulées en jour local (`YYYY-MM-DD`, voir `src/lib/date.ts`) et jamais en
 UTC : sinon une saisie tardive le soir bascule sur le lendemain.

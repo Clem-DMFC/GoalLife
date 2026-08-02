@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useLockBodyScroll } from '../hooks/useLockBodyScroll'
 import type { MacroTotals } from '../lib/types'
 
 const FIELDS: { key: keyof MacroTotals; label: string; unit: string }[] = [
@@ -26,6 +27,8 @@ export function TargetsSheet({
   })
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  useLockBodyScroll()
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose()

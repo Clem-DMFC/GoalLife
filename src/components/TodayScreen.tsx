@@ -2,12 +2,15 @@ import { useState } from 'react'
 import { DayNav } from './DayNav'
 import { EntryForm } from './EntryForm'
 import { EntryList } from './EntryList'
-import { PresetGrid } from './PresetGrid'
+import { FoodSearchSheet } from './FoodSearchSheet'
+import { QuickAdd } from './QuickAdd'
 import { RingsPanel } from './RingsPanel'
 import { TargetsSheet } from './TargetsSheet'
 import { HistoryCard } from './HistoryCard'
-import { useFoodEntries } from '../hooks/useFoodEntries'
+import { useFoodEntries, type NewEntry } from '../hooks/useFoodEntries'
+import { useFavorites } from '../hooks/useFavorites'
 import { useHistory, weeklyAverage } from '../hooks/useHistory'
+import { useRecents } from '../hooks/useRecents'
 import type { MacroTotals } from '../lib/types'
 
 export function TodayScreen({
@@ -24,13 +27,18 @@ export function TodayScreen({
   onSaveTargets: (t: MacroTotals) => Promise<void>
 }) {
   const { entries, totals, loading, error, add, remove } = useFoodEntries(userId, day)
-  const [sheet, setSheet] = useState(false)
-  const [historyKey, setHistoryKey] = useState(0)
-  const { rows } = useHistory(userId, 14, historyKey)
+  const [sheet, setSheet] = useState<'targets' | 'search' | null>(null)
+  const [dataKey, setDataKey] = useState(0)
+  const { rows } = useHistory(userId, 14, dataKey)
+  const { recents } = useRecents(userId, dataKey)
+  const { favorites, add: addFavorite, remove: removeFavorite } = useFavorites(userId)
   const week = weeklyAverage(rows)
 
-  // L'historique se recalcule après chaque écriture du jour courant.
-  const bump = () => setHistoryKey((k) => k + 1)
+  // Historique et récents se recalculent après chaque écriture.
+  const addEntry = async (entry: NewEntry) => {
+    await add(entry)
+    setDataKey((k) => k + 1)
+  }
 
   return (
     <div className="space-y-3">
@@ -39,7 +47,11 @@ export function TodayScreen({
       <RingsPanel totals={totals} targets={targets} />
 
       <div className="flex items-center gap-2">
-        <button type="button" className="btn-ghost flex-1 py-2.5 text-sm" onClick={() => setSheet(true)}>
+        <button
+          type="button"
+          className="btn-ghost flex-1 py-2.5 text-sm"
+          onClick={() => setSheet('targets')}
+        >
           Objectifs
         </button>
         {week.days > 0 && (
@@ -52,24 +64,16 @@ export function TodayScreen({
         )}
       </div>
 
-      <section className="space-y-2">
-        <h2 className="px-1 text-xs font-medium uppercase tracking-wide text-black/40">
-          Raccourcis
-        </h2>
-        <PresetGrid
-          onAdd={async (p) => {
-            await add(p)
-            bump()
-          }}
-        />
-      </section>
-
-      <EntryForm
-        onAdd={async (e) => {
-          await add(e)
-          bump()
-        }}
+      <QuickAdd
+        favorites={favorites}
+        recents={recents}
+        onAdd={addEntry}
+        onSaveFavorite={addFavorite}
+        onRemoveFavorite={removeFavorite}
+        onOpenSearch={() => setSheet('search')}
       />
+
+      <EntryForm onAdd={addEntry} />
 
       <section className="space-y-2">
         <h2 className="px-1 text-xs font-medium uppercase tracking-wide text-black/40">
@@ -82,7 +86,7 @@ export function TodayScreen({
             entries={entries}
             onRemove={async (id) => {
               await remove(id)
-              bump()
+              setDataKey((k) => k + 1)
             }}
           />
         )}
@@ -92,8 +96,20 @@ export function TodayScreen({
 
       {error && <p className="px-1 text-sm text-protein">{error}</p>}
 
-      {sheet && (
-        <TargetsSheet targets={targets} onClose={() => setSheet(false)} onSave={onSaveTargets} />
+      {sheet === 'targets' && (
+        <TargetsSheet
+          targets={targets}
+          onClose={() => setSheet(null)}
+          onSave={onSaveTargets}
+        />
+      )}
+
+      {sheet === 'search' && (
+        <FoodSearchSheet
+          onClose={() => setSheet(null)}
+          onAdd={addEntry}
+          onSaveFavorite={addFavorite}
+        />
       )}
     </div>
   )

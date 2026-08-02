@@ -28,6 +28,21 @@ export type Weight = {
   kg: number
 }
 
+/** Ingrédient d'un plat composé, tel que stocké dans favorites.items. */
+export type RecipeItem = { name: string; grams: number } & MacroTotals
+
+export type Favorite = {
+  id: string
+  user_id: string
+  name: string
+  kcal: number
+  protein: number
+  carbs: number
+  fat: number
+  items: RecipeItem[] | null
+  created_at: string
+}
+
 export type MacroTotals = Record<Macro, number>
 
 export const EMPTY_TOTALS: MacroTotals = { kcal: 0, protein: 0, carbs: 0, fat: 0 }
@@ -60,6 +75,13 @@ export type Database = {
         Row: Weight
         Insert: Omit<Weight, 'id' | 'user_id'> & Partial<Pick<Weight, 'id' | 'user_id'>>
         Update: Partial<Weight>
+        Relationships: []
+      }
+      favorites: {
+        Row: Favorite
+        Insert: Omit<Favorite, 'id' | 'user_id' | 'created_at'> &
+          Partial<Pick<Favorite, 'id' | 'user_id' | 'created_at'>>
+        Update: Partial<Favorite>
         Relationships: []
       }
     }
