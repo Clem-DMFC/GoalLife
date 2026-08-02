@@ -1,0 +1,110 @@
+import { useState } from 'react'
+import type { NewEntry } from '../hooks/useFoodEntries'
+
+const EMPTY = { name: '', kcal: '', protein: '', carbs: '', fat: '' }
+
+export function EntryForm({ onAdd }: { onAdd: (entry: NewEntry) => Promise<void> }) {
+  const [open, setOpen] = useState(false)
+  const [form, setForm] = useState(EMPTY)
+  const [busy, setBusy] = useState(false)
+
+  const set = (k: keyof typeof EMPTY) => (e: React.ChangeEvent<HTMLInputElement>) =>
+    setForm((f) => ({ ...f, [k]: e.target.value }))
+
+  const num = (v: string) => {
+    const n = Number(v)
+    return Number.isFinite(n) && n > 0 ? Math.round(n) : 0
+  }
+
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!form.name.trim() || busy) return
+    setBusy(true)
+    try {
+      await onAdd({
+        name: form.name.trim(),
+        kcal: num(form.kcal),
+        protein: num(form.protein),
+        carbs: num(form.carbs),
+        fat: num(form.fat),
+      })
+      setForm(EMPTY)
+      setOpen(false)
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  if (!open) {
+    return (
+      <button type="button" className="btn-ghost w-full py-3" onClick={() => setOpen(true)}>
+        + Saisie manuelle
+      </button>
+    )
+  }
+
+  return (
+    <form className="card space-y-3" onSubmit={submit}>
+      <div>
+        <label className="label" htmlFor="entry-name">
+          Aliment
+        </label>
+        <input
+          id="entry-name"
+          className="field font-sans"
+          value={form.name}
+          onChange={set('name')}
+          placeholder="Ex. Pâtes bolo"
+          autoFocus
+          enterKeyHint="done"
+        />
+      </div>
+
+      <div className="grid grid-cols-4 gap-2">
+        {(
+          [
+            ['kcal', 'kcal'],
+            ['protein', 'P'],
+            ['carbs', 'G'],
+            ['fat', 'L'],
+          ] as const
+        ).map(([key, lbl]) => (
+          <div key={key}>
+            <label className="label" htmlFor={`entry-${key}`}>
+              {lbl}
+            </label>
+            <input
+              id={`entry-${key}`}
+              className="field px-2 text-center"
+              value={form[key]}
+              onChange={set(key)}
+              inputMode="numeric"
+              pattern="[0-9]*"
+              placeholder="0"
+            />
+          </div>
+        ))}
+      </div>
+
+      <div className="flex gap-2">
+        <button
+          type="button"
+          className="btn-ghost flex-1 py-3"
+          onClick={() => {
+            setForm(EMPTY)
+            setOpen(false)
+          }}
+        >
+          Annuler
+        </button>
+        <button
+          type="submit"
+          className="btn-primary flex-1 py-3"
+          disabled={!form.name.trim() || busy}
+        >
+          {busy ? '…' : 'Ajouter'}
+        </button>
+      </div>
+    </form>
+  )
+}

@@ -1,0 +1,78 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    /* Empêche iOS de zoomer le texte en paysage. */
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    @apply bg-canvas text-ink font-sans antialiased;
+    /* Fond derrière le rebond de scroll iOS. */
+    background-color: #eef0f3;
+    overscroll-behavior-y: none;
+  }
+
+  /* iOS zoome sur un input dont la police fait < 16px : on force 16px. */
+  input,
+  select,
+  textarea,
+  button {
+    font-size: 16px;
+  }
+
+  input[type='number'] {
+    -moz-appearance: textfield;
+  }
+
+  input[type='number']::-webkit-outer-spin-button,
+  input[type='number']::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+}
+
+@layer components {
+  .card {
+    @apply rounded-2xl bg-white p-4 shadow-sm;
+  }
+
+  /* Cible tactile confortable au pouce. */
+  .tap {
+    @apply min-h-[48px] select-none active:scale-[0.98] transition-transform;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .btn-primary {
+    @apply tap rounded-xl bg-protein px-4 font-medium text-white disabled:opacity-40;
+  }
+
+  .btn-ghost {
+    @apply tap rounded-xl bg-black/5 px-4 font-medium text-ink disabled:opacity-40;
+  }
+
+  .field {
+    @apply w-full rounded-xl border border-black/10 bg-white px-3 py-3 font-mono
+           outline-none focus:border-protein focus:ring-2 focus:ring-protein/20;
+  }
+
+  .label {
+    @apply mb-1 block text-xs font-medium uppercase tracking-wide text-black/45;
+  }
+
+  /* Safe areas : encoche en haut, barre home en bas. */
+  .safe-top {
+    padding-top: env(safe-area-inset-top);
+  }
+
+  .safe-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  .safe-x {
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+  }
+}
