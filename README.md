@@ -1,2 +1,141 @@
-# GoalLIfe
-App personnalisé pour clem
+# GoalLife
+
+App perso de suivi nutritionnel pour une prise de muscle : calories, macros et poids.
+Mobile-first, pensée pour être installée sur l'écran d'accueil d'un iPhone (PWA) et
+utilisée au pouce.
+
+**Stack** : Vite + React + TypeScript, Tailwind CSS, Supabase (auth + Postgres).
+
+---
+
+## Fonctionnalités
+
+**Écran « Aujourd'hui »**
+
+- 4 anneaux de progression : calories, protéines, glucides, lipides (total du jour vs objectif).
+- Objectifs éditables (stockés dans `targets`).
+- 6 raccourcis pour ajouter une entrée en un tap (shake, poulet, œufs, avoine, riz, bière).
+- Saisie manuelle : nom + kcal / P / G / L.
+- Liste des entrées du jour, avec suppression.
+- Navigation entre les jours (flèches ‹ ›), pour consulter ou compléter un jour passé.
+- Moyenne des calories sur les 7 derniers jours renseignés.
+- Historique des 14 derniers jours — un tap sur une ligne ouvre ce jour-là.
+
+**Écran « Poids »**
+
+- Saisie de la pesée du matin (une par jour, modifiable).
+- Courbe des 14 dernières pesées (SVG écrit à la main, aucune lib de charts).
+- Variation ramenée à 7 jours + indication « dans la cible / hors cible ».
+- Rappel de la cible : +0,25 à +0,5 kg par semaine.
+
+---
+
+## Installation
+
+Prérequis : Node 18+.
+
+```bash
+npm install
+cp .env.example .env   # puis remplir les deux variables (voir ci-dessous)
+npm run dev            # http://localhost:5173
+```
+
+Build de production :
+
+```bash
+npm run build    # sort dans dist/
+npm run preview  # sert dist/ en local pour vérifier
+```
+
+---
+
+## Configuration Supabase
+
+1. **Créer le projet** sur [supabase.com](https://supabase.com) (plan gratuit suffisant).
+
+2. **Créer les tables** : ouvrir _SQL Editor_ → _New query_, coller le contenu de
+   [`supabase/migrations/0001_init.sql`](supabase/migrations/0001_init.sql), puis _Run_.
+   Le script crée les 3 tables (`targets`, `food_entries`, `weights`), active RLS et pose
+   les policies : chaque ligne n'est lisible et modifiable que par son propriétaire
+   (`user_id = auth.uid()`).
+
+3. **Récupérer les clés** : _Project Settings_ → _API_. Reporter dans `.env` :
+
+   ```
+   VITE_SUPABASE_URL=https://xxxxxxxx.supabase.co
+   VITE_SUPABASE_ANON_KEY=eyJhbGciOi...
+   ```
+
+   La clé `anon` est publique par nature : c'est RLS qui protège les données, pas le secret
+   de la clé. Ne jamais mettre la clé `service_role` dans le front.
+
+4. **Activer l'auth par email** : _Authentication_ → _Providers_ → _Email_ doit être activé.
+   L'app utilise le code à 6 chiffres (OTP), pas le magic link — voir plus bas.
+
+5. Optionnel, comme l'app est perso : _Authentication_ → _Sign In / Providers_ →
+   décocher **Allow new users to sign up** une fois ton compte créé, pour que personne
+   d'autre ne puisse s'inscrire.
+
+### Pourquoi un code à 6 chiffres et pas un magic link
+
+Un magic link cliqué depuis l'app Mail ouvre **Safari**, pas la PWA installée : la session
+atterrit dans le mauvais « navigateur » et l'app sur l'écran d'accueil reste déconnectée.
+Le flow OTP (saisie de l'email → réception d'un code → saisie du code dans l'app) reste
+entièrement dans la PWA.
+
+Côté Supabase, le template d'email par défaut contient déjà `{{ .Token }}` pour les
+nouveaux projets. Si le mail reçu ne contient qu'un lien, éditer
+_Authentication_ → _Emails_ → _Magic Link_ et y insérer `{{ .Token }}`.
+
+---
+
+## PWA / iOS
+
+- `public/manifest.webmanifest` + `public/sw.js` (service worker minimal : coquille en
+  cache, requêtes Supabase toujours réseau). Le SW n'est enregistré qu'en production.
+- Meta tags Apple dans `index.html` : `apple-mobile-web-app-capable`,
+  `apple-mobile-web-app-status-bar-style`, `apple-touch-icon` en 180×180.
+- `viewport-fit=cover` + classes `.safe-top` / `.safe-bottom` / `.safe-x` basées sur
+  `env(safe-area-inset-*)` pour l'encoche et la barre du bas.
+- Les inputs sont en 16px : en dessous, iOS zoome automatiquement au focus.
+- Une bannière d'aide à l'installation s'affiche **uniquement sur Safari iOS non installé**
+  (`src/components/IosInstallBanner.tsx`), et se masque définitivement une fois fermée.
+
+**Installer sur iPhone** : ouvrir le site dans Safari → bouton _Partager_ →
+_Sur l'écran d'accueil_.
+
+---
+
+## Déploiement
+
+L'app est un site statique : n'importe quel hébergeur front fait l'affaire. Le plus simple,
+en connectant le repo GitHub :
+
+**Vercel** — _New Project_ → importer le repo. Framework détecté : Vite
+(build `npm run build`, output `dist`). Ajouter `VITE_SUPABASE_URL` et
+`VITE_SUPABASE_ANON_KEY` dans _Settings_ → _Environment Variables_, puis redéployer.
+
+**Netlify** — _Add new site_ → _Import an existing project_. Build command `npm run build`,
+publish directory `dist`. Mêmes variables dans _Site settings_ → _Environment variables_.
+
+Les variables `VITE_*` sont injectées **au build** : après les avoir ajoutées ou modifiées,
+il faut relancer un déploiement.
+
+Une fois en ligne, ajouter l'URL de prod dans Supabase : _Authentication_ → _URL
+Configuration_ → _Site URL_.
+
+---
+
+## Structure
+
+```
+src/
+  components/    écrans et UI (Auth, TodayScreen, WeightScreen, Ring, …)
+  hooks/         accès aux données (useSession, useTargets, useFoodEntries, useWeights, useHistory)
+  lib/           client Supabase, types, helpers de date, presets
+public/          manifest, service worker, icônes
+supabase/        migration SQL à coller dans le SQL Editor
+```
+
+Les dates sont manipulées en jour local (`YYYY-MM-DD`, voir `src/lib/date.ts`) et jamais en
+UTC : sinon une saisie tardive le soir bascule sur le lendemain.
