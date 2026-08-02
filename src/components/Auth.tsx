@@ -33,11 +33,16 @@ export function Auth() {
     if (busy) return
     setBusy(true)
     setError(null)
-    const { error } = await supabase.auth.verifyOtp({
-      email: email.trim(),
-      token: code.trim(),
-      type: 'email',
-    })
+    // Selon que le compte vient d'être créé ou existait déjà, Supabase émet un
+    // token de type "signup" ou "email". On essaie les deux plutôt que de
+    // renvoyer un "Token has expired or is invalid" trompeur.
+    const attempt = (type: 'email' | 'signup' | 'magiclink') =>
+      supabase.auth.verifyOtp({ email: email.trim(), token: code.trim(), type })
+
+    let { error } = await attempt('email')
+    if (error) ({ error } = await attempt('signup'))
+    if (error) ({ error } = await attempt('magiclink'))
+
     setBusy(false)
     // En cas de succès, onAuthStateChange bascule l'app : rien à faire ici.
     if (error) setError(error.message)
