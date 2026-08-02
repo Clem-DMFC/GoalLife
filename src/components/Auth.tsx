@@ -81,7 +81,7 @@ export function Auth() {
               {busy ? 'Envoi…' : 'Recevoir un code'}
             </button>
             <p className="text-center text-xs text-black/40">
-              Un code à 6 chiffres arrive par email. Pas de mot de passe.
+              Un code arrive par email. Pas de mot de passe.
             </p>
           </form>
         ) : (
@@ -92,14 +92,16 @@ export function Auth() {
               </label>
               <input
                 id="auth-code"
-                className="field text-center text-2xl tracking-[0.4em]"
+                className="field text-center text-2xl tracking-[0.25em]"
                 value={code}
-                onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                // La longueur du code est configurable côté Supabase (6 à 10) :
+                // on ne tronque pas à 6, sinon un code plus long est mutilé.
+                onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 10))}
                 inputMode="numeric"
                 pattern="[0-9]*"
                 autoComplete="one-time-code"
                 enterKeyHint="go"
-                placeholder="000000"
+                placeholder="——————"
                 autoFocus
                 required
               />
@@ -107,7 +109,7 @@ export function Auth() {
             <button
               type="submit"
               className="btn-primary w-full py-3.5"
-              disabled={busy || code.length !== 6}
+              disabled={busy || code.length < 6}
             >
               {busy ? 'Vérification…' : 'Se connecter'}
             </button>
