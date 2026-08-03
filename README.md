@@ -114,11 +114,16 @@ _Authentication_ → _Emails_ → _Magic Link_ et y insérer `{{ .Token }}`.
 
 - Icônes : `public/icons/icon.svg` (tuile « any ») et `icon-maskable.svg` (marge de
   sécurité pour Android, qui rogne l'icône selon la forme du lanceur). Les PNG en sont
-  dérivés — pour les régénérer sans dépendance supplémentaire :
+  dérivés — pour les régénérer après une retouche du tracé :
 
   ```bash
-  chrome --headless --screenshot=icon-512.png --window-size=512,512 file:///.../icon.svg
+  python scripts/generate_icons.py
   ```
+
+  Le script pilote Chrome en headless, sans dépendance ajoutée au projet. Ne pas capturer
+  le SVG directement : Chrome le rendrait à sa taille intrinsèque et recadrerait le coin
+  haut-gauche au lieu de le réduire. Le script contourne ce piège, c'est toute sa raison
+  d'être.
 
 - `public/manifest.webmanifest` + `public/sw.js` (service worker minimal : coquille en
   cache, requêtes Supabase toujours réseau). Le SW n'est enregistré qu'en production.

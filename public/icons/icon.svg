@@ -4,7 +4,7 @@
   aux coins arrondis, il ne faut donc pas les dessiner ici.
   Source des PNG : voir README, section PWA / iOS.
 -->
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" fill="none">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none">
   <rect width="512" height="512" fill="#0E1011" />
   <g transform="translate(0,-18)">
     <path d="M387.9 296.9 A132 132 0 1 1 375.6 234.2" stroke="#B8F135" stroke-width="60" />

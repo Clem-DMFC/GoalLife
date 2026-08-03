@@ -4,7 +4,7 @@
   soit 80 % du canevas, est garanti visible. La marque est donc réduite à 72 %
   et recentrée — sans quoi les pointes de cornes se font rogner.
 -->
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" fill="none">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none">
   <rect width="512" height="512" fill="#0E1011" />
   <g transform="translate(256,256) scale(0.72) translate(-256,-273.5)">
     <path d="M387.9 296.9 A132 132 0 1 1 375.6 234.2" stroke="#B8F135" stroke-width="60" />
