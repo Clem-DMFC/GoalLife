@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { AddSheet } from './AddSheet'
 import { DayNav } from './DayNav'
 import { MacroSplit } from './MacroSplit'
@@ -13,7 +13,7 @@ import { useRecents } from '../hooks/useRecents'
 import { useWater } from '../hooks/useWater'
 import { today } from '../lib/date'
 import { MEAL_LABELS, OTHER_LABEL } from '../lib/meals'
-import type { FoodEntry, TargetValues } from '../lib/types'
+import type { FoodEntry, MealType, TargetValues } from '../lib/types'
 
 /** « Ajouté au déjeuner », « Ajouté à la collation » — l'article suit le repas. */
 function addedTo(entry: NewEntry): string {
@@ -30,6 +30,8 @@ export function TodayScreen({
   targets,
   addOpen,
   onAddOpenChange,
+  addMeal,
+  focusWater,
 }: {
   userId: string
   day: string
@@ -38,6 +40,10 @@ export function TodayScreen({
   /** Pilotée par la barre de navigation, qui porte le bouton d'ajout. */
   addOpen: boolean
   onAddOpenChange: (open: boolean) => void
+  /** Repas imposé par un deep link de notification. */
+  addMeal?: MealType
+  /** Amène l'eau sous les yeux, à l'ouverture depuis un rappel d'hydratation. */
+  focusWater?: boolean
 }) {
   const { entries, totals, loading, error, add, copy, remove } = useFoodEntries(userId, day)
   const water = useWater(userId, day)
@@ -45,6 +51,14 @@ export function TodayScreen({
   const { recents } = useRecents(userId, dataKey)
   const { favorites, add: addFavorite, remove: removeFavorite } = useFavorites(userId)
   const toast = useToast()
+  const waterRef = useRef<HTMLDivElement>(null)
+
+  // Rappel d'hydratation : la carte de l'eau est sous les anneaux et le
+  // camembert, donc hors écran à l'ouverture. On l'amène sous les yeux.
+  useEffect(() => {
+    if (!focusWater) return
+    waterRef.current?.scrollIntoView({ block: 'center', behavior: 'smooth' })
+  }, [focusWater])
 
   /**
    * Renvoie si l'écriture a abouti, au lieu de propager l'erreur : la feuille
@@ -101,14 +115,16 @@ export function TodayScreen({
 
         <MacroSplit totals={totals} />
 
-        <WaterBar
-          ml={water.ml}
-          target={targets.water_ml}
-          canUndo={water.canUndo}
-          onAdd={water.add}
-          onUndo={water.undo}
-          onReset={water.reset}
-        />
+        <div ref={waterRef}>
+          <WaterBar
+            ml={water.ml}
+            target={targets.water_ml}
+            canUndo={water.canUndo}
+            onAdd={water.add}
+            onUndo={water.undo}
+            onReset={water.reset}
+          />
+        </div>
 
         <section className="space-y-2">
           <h2 className="px-1 text-xs font-medium uppercase tracking-wide text-ink/40">
@@ -139,6 +155,7 @@ export function TodayScreen({
         <AddSheet
           favorites={favorites}
           recents={recents}
+          initialMeal={addMeal}
           onClose={() => onAddOpenChange(false)}
           onAdd={addEntry}
           onSaveFavorite={addFavorite}

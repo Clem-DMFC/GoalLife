@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { PushSettings } from './PushSettings'
 import { TargetsSheet } from './TargetsSheet'
 import { supabase } from '../lib/supabase'
 import type { TargetValues } from '../lib/types'
@@ -48,6 +49,8 @@ export function SettingsScreen({
             Modifier les objectifs
           </button>
         </section>
+
+        <PushSettings />
 
         <section className="space-y-2">
           <h2 className="px-1 text-xs font-medium uppercase tracking-wide text-ink/40">Compte</h2>

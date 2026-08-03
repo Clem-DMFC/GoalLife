@@ -6,7 +6,7 @@ import { useLockBodyScroll } from '../hooks/useLockBodyScroll'
 import type { NewEntry } from '../hooks/useFoodEntries'
 import type { NewFavorite } from '../hooks/useFavorites'
 import { mealForTime } from '../lib/meals'
-import type { Favorite } from '../lib/types'
+import type { Favorite, MealType } from '../lib/types'
 import type { Recent } from '../hooks/useRecents'
 
 /**
@@ -17,6 +17,7 @@ import type { Recent } from '../hooks/useRecents'
 export function AddSheet({
   favorites,
   recents,
+  initialMeal,
   onClose,
   onAdd,
   onSaveFavorite,
@@ -24,6 +25,8 @@ export function AddSheet({
 }: {
   favorites: Favorite[]
   recents: Recent[]
+  /** Imposé par un deep link de notification ; sinon suggéré par l'heure. */
+  initialMeal?: MealType
   onClose: () => void
   /** Renvoie `true` si l'entrée a bien été écrite — sinon la feuille reste. */
   onAdd: (entry: NewEntry) => Promise<boolean>
@@ -33,7 +36,7 @@ export function AddSheet({
   const [searching, setSearching] = useState(false)
   // Le repas est choisi une fois pour toute la feuille : peu importe le mode
   // d'ajout (recherche, preset, favori, récent, manuel), l'entrée est taguée.
-  const [meal, setMeal] = useState(mealForTime())
+  const [meal, setMeal] = useState(initialMeal ?? mealForTime())
 
   useLockBodyScroll()
 

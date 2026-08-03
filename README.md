@@ -36,6 +36,10 @@ l'écran. Les objectifs et la déconnexion sont sur l'écran Réglages.
   est fait par la fonction SQL `add_water`, pas dans le navigateur.
 - **Confirmation à l'ajout** : chaque ajout, copie ou suppression affiche un message court
   (« Skyr ajouté au petit-déj »), et un échec d'écriture le dit au lieu de passer inaperçu.
+- **Rappels planifiés** : notifications push à heures fixes (pesée, repas, hydratation),
+  activables depuis les Réglages. Un clic ouvre directement l'écran concerné. Voir
+  [la doc de l'Edge Function](supabase/functions/send-reminders/README.md) pour la mise en
+  service.
 - **Duplication** : copier un repas, refaire un repas de la veille, ou dupliquer une
   journée entière depuis l'historique (alimentaire seul — ni eau ni poids).
 - Navigation entre les jours (flèches ‹ ›), pour consulter ou compléter un jour passé.
@@ -181,9 +185,25 @@ src/
                  useFavorites, useRecents, useHistory, useWater)
   lib/           client Supabase, types, helpers de date, presets, Open Food Facts,
                  répartition des macros
-public/          manifest, service worker, icônes
-supabase/        migrations SQL à coller dans le SQL Editor
+public/          manifest, service worker (cache + Web Push), icônes
+supabase/
+  migrations/    SQL à coller dans le SQL Editor
+  functions/     Edge Functions Deno (send-reminders : notifications planifiées)
 ```
+
+## Notifications planifiées
+
+iOS n'autorise pas une PWA à programmer une notification locale : sans serveur,
+rien n'arrive quand l'app est fermée. Les rappels passent donc par le **Web Push**,
+avec une Edge Function déclenchée chaque minute par `pg_cron` qui compare l'heure de
+Paris au planning.
+
+Deux conditions côté iPhone : **iOS 16.4+**, et la PWA **installée sur l'écran
+d'accueil** — en onglet Safari l'abonnement n'existe pas, et les réglages le disent
+au lieu de laisser un interrupteur qui ne répond pas.
+
+Mise en service détaillée (clés VAPID, secrets, cron) :
+[`supabase/functions/send-reminders/README.md`](supabase/functions/send-reminders/README.md).
 
 ## Open Food Facts
 

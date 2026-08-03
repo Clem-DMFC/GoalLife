@@ -17,5 +17,8 @@
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true
   },
-  "include": ["src"]
+  "include": ["src"],
+  // Les tests ont besoin des types Node (fs, Buffer) que le code de l'app ne
+  // doit surtout pas voir : ils sont vérifiés à part, via tsconfig.test.json.
+  "exclude": ["src/**/*.test.ts", "src/**/*.test.tsx"]
 }

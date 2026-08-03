@@ -13,17 +13,31 @@ import { useSession } from './hooks/useSession'
 import { useTargets } from './hooks/useTargets'
 import { missingEnv } from './lib/supabase'
 import { today } from './lib/date'
+import { clearDeepLink, readDeepLink } from './lib/deeplink'
 import { TAB_TITLES, type Tab } from './lib/tabs'
 
 export default function App() {
   const { session, loading } = useSession()
   const userId = session?.user.id
   const { targets, save: saveTargets } = useTargets(userId)
-  const [tab, setTab] = useState<Tab>('today')
+
+  /*
+   * Deep link d'une notification (`/?go=add&meal=diner`). Lu une seule fois,
+   * à l'initialisation : le clic sur un rappel doit tomber sur l'écran visé.
+   * L'URL est nettoyée dans la foulée pour qu'un rechargement ne rouvre pas
+   * éternellement la même feuille.
+   */
+  const [link] = useState(() => {
+    const parsed = readDeepLink(window.location.search)
+    if (parsed) clearDeepLink()
+    return parsed
+  })
+
+  const [tab, setTab] = useState<Tab>(link?.tab ?? 'today')
   const [day, setDay] = useState(today())
   // La feuille d'ajout est pilotée depuis la barre du bas : elle doit pouvoir
   // s'ouvrir depuis n'importe quel onglet, en ramenant sur l'écran du jour.
-  const [addOpen, setAddOpen] = useState(false)
+  const [addOpen, setAddOpen] = useState(link?.openAdd === true)
 
   if (missingEnv.length > 0) return <ConfigError missing={missingEnv} />
 
@@ -61,6 +75,8 @@ export default function App() {
               targets={targets}
               addOpen={addOpen}
               onAddOpenChange={setAddOpen}
+              addMeal={link?.meal}
+              focusWater={link?.focusWater}
             />
           )}
           {tab === 'history' && (

@@ -1,0 +1,22 @@
+{
+  // Les tests tournent sous Node : ils lisent des fichiers (le service worker)
+  // et manipulent des Buffer. Ces types restent cantonnés ici, pour que le
+  // code de l'app ne puisse pas s'appuyer dessus par mégarde.
+  //
+  // L'Edge Function elle-même (`index.ts`) n'est pas incluse : elle importe des
+  // spécificateurs `jsr:` et l'API Deno, que TypeScript ne sait pas résoudre.
+  // Seuls ses modules purs le sont, tirés par les tests.
+  "extends": "./tsconfig.app.json",
+  "compilerOptions": {
+    "types": ["node"],
+    "noUnusedLocals": false
+  },
+  "include": [
+    // Porte l'augmentation de `import.meta.env`, que les modules testés lisent.
+    "src/vite-env.d.ts",
+    "src/**/*.test.ts",
+    "src/**/*.test.tsx",
+    "supabase/functions/**/*.test.ts"
+  ],
+  "exclude": []
+}

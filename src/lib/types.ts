@@ -26,6 +26,16 @@ export type FoodEntry = {
   created_at: string
 }
 
+/** Abonnement Web Push d'un appareil — une ligne par navigateur installé. */
+export type PushSubscriptionRow = {
+  id: string
+  user_id: string
+  endpoint: string
+  p256dh: string
+  auth: string
+  created_at: string
+}
+
 /** Total d'eau bu sur un jour — une ligne par (user, jour). */
 export type Water = {
   user_id: string
@@ -104,6 +114,13 @@ export type Database = {
         Insert: Omit<Favorite, 'id' | 'user_id' | 'created_at'> &
           Partial<Pick<Favorite, 'id' | 'user_id' | 'created_at'>>
         Update: Partial<Favorite>
+        Relationships: []
+      }
+      push_subscriptions: {
+        Row: PushSubscriptionRow
+        Insert: Omit<PushSubscriptionRow, 'id' | 'user_id' | 'created_at'> &
+          Partial<Pick<PushSubscriptionRow, 'id' | 'user_id' | 'created_at'>>
+        Update: Partial<PushSubscriptionRow>
         Relationships: []
       }
     }
