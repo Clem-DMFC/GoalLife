@@ -22,7 +22,7 @@ export default function App() {
 
   if (loading) {
     return (
-      <div className="flex min-h-[100dvh] items-center justify-center text-sm text-black/30">
+      <div className="flex min-h-[100dvh] items-center justify-center text-sm text-ink/30">
         …
       </div>
     )
@@ -37,7 +37,7 @@ export default function App() {
           <h1 className="text-lg font-bold tracking-tight">GoalLife</h1>
           <button
             type="button"
-            className="tap flex items-center rounded-lg px-2 text-xs text-black/40"
+            className="tap flex items-center rounded-lg px-2 text-xs text-ink/40"
             onClick={() => void supabase.auth.signOut()}
           >
             Déconnexion
@@ -55,7 +55,7 @@ export default function App() {
               key={key}
               type="button"
               className={`tap flex-1 rounded-xl px-3 text-sm font-medium transition-colors ${
-                tab === key ? 'bg-ink text-white' : 'bg-white text-black/60'
+                tab === key ? 'bg-ink text-canvas' : 'bg-surface text-ink/60'
               }`}
               onClick={() => setTab(key)}
             >

@@ -12,7 +12,7 @@ export function EntryList({
 
   if (entries.length === 0) {
     return (
-      <div className="card text-center text-sm text-black/40">Aucune entrée pour ce jour.</div>
+      <div className="card text-center text-sm text-ink/40">Aucune entrée pour ce jour.</div>
     )
   }
 
@@ -26,12 +26,12 @@ export function EntryList({
   }
 
   return (
-    <ul className="card divide-y divide-black/5 p-0">
+    <ul className="card divide-y divide-ink/5 p-0">
       {entries.map((e) => (
         <li key={e.id} className="flex items-center gap-2 px-4 py-2.5">
           <div className="min-w-0 flex-1">
             <div className="truncate text-sm font-medium">{e.name}</div>
-            <div className="font-mono text-[11px] tabular-nums text-black/50">
+            <div className="font-mono text-[11px] tabular-nums text-ink/50">
               {e.kcal} kcal
               <span className="text-protein"> · {e.protein}P</span>
               <span className="text-carbs"> {e.carbs}G</span>
@@ -41,7 +41,7 @@ export function EntryList({
           <button
             type="button"
             aria-label={`Supprimer ${e.name}`}
-            className="tap flex w-11 items-center justify-center rounded-lg text-black/30 active:text-protein disabled:opacity-30"
+            className="tap flex w-11 items-center justify-center rounded-lg text-ink/30 active:text-danger disabled:opacity-30"
             onClick={() => void remove(e.id)}
             disabled={busy === e.id}
           >

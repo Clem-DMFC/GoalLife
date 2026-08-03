@@ -30,12 +30,12 @@ function Tile({
     <div className="relative">
       <button
         type="button"
-        className="tap flex w-full flex-col items-start justify-center rounded-2xl bg-white px-3 py-2.5 pr-8 text-left shadow-sm"
+        className="tap flex w-full flex-col items-start justify-center rounded-2xl bg-surface px-3 py-2.5 pr-8 text-left shadow-sm"
         onClick={onAdd}
       >
         <span className="w-full truncate text-sm font-semibold leading-tight">{name}</span>
-        {hint && <span className="truncate text-[10px] leading-tight text-black/40">{hint}</span>}
-        <span className="mt-1 w-full truncate font-mono text-[10px] tabular-nums text-black/50">
+        {hint && <span className="truncate text-[10px] leading-tight text-ink/40">{hint}</span>}
+        <span className="mt-1 w-full truncate font-mono text-[10px] tabular-nums text-ink/50">
           {totals.kcal} kcal
           <span className="text-protein"> {totals.protein}P</span>
           <span className="text-carbs"> {totals.carbs}G</span>
@@ -47,7 +47,7 @@ function Tile({
           type="button"
           title={action.title}
           aria-label={action.title}
-          className="tap absolute right-0 top-0 flex h-9 w-8 items-center justify-center rounded-lg text-black/25"
+          className="tap absolute right-0 top-0 flex h-9 w-8 items-center justify-center rounded-lg text-ink/25"
           onClick={action.onClick}
         >
           {action.label}
@@ -105,7 +105,7 @@ export function QuickAdd({
             key={key}
             type="button"
             className={`tap flex-1 rounded-xl px-2 text-xs font-medium ${
-              tab === key ? 'bg-ink text-white' : 'bg-white text-black/55'
+              tab === key ? 'bg-ink text-canvas' : 'bg-surface text-ink/55'
             }`}
             onClick={() => setTab(key)}
           >
@@ -130,7 +130,7 @@ export function QuickAdd({
 
       {tab === 'favorites' &&
         (favorites.length === 0 ? (
-          <div className="card text-center text-sm text-black/40">
+          <div className="card text-center text-sm text-ink/40">
             Pas encore de favori. Compose un plat depuis la recherche, ou épingle un aliment
             depuis l'onglet Récents.
           </div>
@@ -155,7 +155,7 @@ export function QuickAdd({
 
       {tab === 'recents' &&
         (recents.length === 0 ? (
-          <div className="card text-center text-sm text-black/40">
+          <div className="card text-center text-sm text-ink/40">
             Rien de récent. Ce que tu saisis apparaîtra ici, réutilisable en un tap.
           </div>
         ) : (

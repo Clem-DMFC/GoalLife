@@ -33,11 +33,11 @@ export function IosInstallBanner() {
   if (!show) return null
 
   return (
-    <div className="card flex items-start gap-3 border border-protein/20 bg-protein/[0.06]">
+    <div className="card flex items-start gap-3 border border-accent/25 bg-accent/[0.08]">
       <span className="text-lg leading-none">📲</span>
       <div className="flex-1 text-[13px] leading-snug">
         <p className="font-semibold">Installe l'app sur ton iPhone</p>
-        <p className="mt-0.5 text-black/60">
+        <p className="mt-0.5 text-ink/60">
           Dans Safari : bouton <strong>Partager</strong> (le carré avec la flèche) →{' '}
           <strong>Sur l'écran d'accueil</strong>. L'app s'ouvrira en plein écran, sans barre
           Safari.
@@ -46,7 +46,7 @@ export function IosInstallBanner() {
       <button
         type="button"
         aria-label="Masquer"
-        className="tap -mt-1 -mr-1 flex w-9 items-center justify-center rounded-lg text-black/30"
+        className="tap -mt-1 -mr-1 flex w-9 items-center justify-center rounded-lg text-ink/30"
         onClick={() => {
           localStorage.setItem(DISMISS_KEY, '1')
           setShow(false)

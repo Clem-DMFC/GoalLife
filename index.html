@@ -10,7 +10,9 @@
     <meta name="description" content="Suivi calories, macros et poids pour prise de muscle." />
 
     <link rel="manifest" href="/manifest.webmanifest" />
-    <meta name="theme-color" content="#EEF0F3" />
+    <!-- Deux variantes : Safari choisit selon le réglage Apparence de l'iPhone. -->
+    <meta name="theme-color" content="#F7F8F7" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#0E1011" media="(prefers-color-scheme: dark)" />
 
     <!-- iOS / Safari : "Ajouter à l'écran d'accueil" -->
     <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -19,6 +21,10 @@
     <meta name="apple-mobile-web-app-title" content="GoalLife" />
     <link rel="apple-touch-icon" sizes="180x180" href="/icons/apple-touch-icon-180.png" />
     <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png" />
+
+    <!-- Polices variables Geist, préchargées pour éviter le flash de police système. -->
+    <link rel="preload" href="/fonts/Geist-Variable.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href="/fonts/GeistMono-Variable.woff2" as="font" type="font/woff2" crossorigin />
   </head>
   <body>
     <div id="root"></div>
