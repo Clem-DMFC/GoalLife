@@ -4,13 +4,15 @@ import type { Favorite, MacroTotals } from '../lib/types'
 import type { NewEntry } from '../hooks/useFoodEntries'
 import type { NewFavorite } from '../hooks/useFavorites'
 import type { Recent } from '../hooks/useRecents'
+import { EntryForm } from './EntryForm'
 
-type Tab = 'presets' | 'favorites' | 'recents'
+type Tab = 'presets' | 'favorites' | 'recents' | 'manual'
 
 const TABS: [Tab, string][] = [
   ['presets', 'Raccourcis'],
   ['favorites', 'Favoris'],
   ['recents', 'Récents'],
+  ['manual', 'Manuel'],
 ]
 
 function Tile({
@@ -57,21 +59,19 @@ function Tile({
   )
 }
 
-/** Trois sources d'ajout en un tap : presets figés, favoris, saisies récentes. */
+/** Quatre sources d'ajout en un tap : presets figés, favoris, récents, manuel. */
 export function QuickAdd({
   favorites,
   recents,
   onAdd,
   onSaveFavorite,
   onRemoveFavorite,
-  onOpenSearch,
 }: {
   favorites: Favorite[]
   recents: Recent[]
   onAdd: (entry: NewEntry) => Promise<void>
   onSaveFavorite: (fav: NewFavorite) => Promise<void>
   onRemoveFavorite: (id: string) => Promise<void>
-  onOpenSearch: () => void
 }) {
   const [tab, setTab] = useState<Tab>('presets')
   const [busy, setBusy] = useState(false)
@@ -95,10 +95,6 @@ export function QuickAdd({
 
   return (
     <section className="space-y-2">
-      <button type="button" className="btn-primary w-full py-3" onClick={onOpenSearch}>
-        Rechercher un aliment
-      </button>
-
       <div className="flex gap-1">
         {TABS.map(([key, label]) => (
           <button
@@ -175,6 +171,8 @@ export function QuickAdd({
             ))}
           </div>
         ))}
+
+      {tab === 'manual' && <EntryForm variant="tab" onAdd={onAdd} />}
     </section>
   )
 }
