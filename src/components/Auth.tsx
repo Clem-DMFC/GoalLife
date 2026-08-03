@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Logo } from './Logo'
 import { supabase } from '../lib/supabase'
 
 type Step = 'email' | 'code'
@@ -51,7 +52,8 @@ export function Auth() {
   return (
     <div className="safe-top safe-bottom safe-x flex min-h-[100dvh] flex-col justify-center px-6">
       <div className="mx-auto w-full max-w-sm">
-        <h1 className="text-2xl font-bold tracking-tight">Goatly</h1>
+        <Logo size={52} className="text-protein" />
+        <h1 className="mt-4 text-2xl font-bold tracking-tight">Goatly</h1>
         <p className="mt-1 text-sm text-ink/50">Calories, macros et poids. Rien d'autre.</p>
 
         {step === 'email' ? (

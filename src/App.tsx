@@ -4,6 +4,7 @@ import { BottomNav } from './components/BottomNav'
 import { ConfigError } from './components/ConfigError'
 import { HistoryScreen } from './components/HistoryScreen'
 import { IosInstallBanner } from './components/IosInstallBanner'
+import { Logo } from './components/Logo'
 import { SettingsScreen } from './components/SettingsScreen'
 import { TodayScreen } from './components/TodayScreen'
 import { WeightScreen } from './components/WeightScreen'
@@ -38,7 +39,10 @@ export default function App() {
   return (
     <div className="safe-x mx-auto flex min-h-[100dvh] max-w-md flex-col">
       <header className="safe-top sticky top-0 z-30 bg-canvas/90 backdrop-blur">
-        <div className="px-4 py-3">
+        {/* La marque n'accompagne que l'écran du jour : ailleurs, le titre
+            indique où l'on se trouve, et un logo répété n'apporterait rien. */}
+        <div className="flex items-center gap-2 px-4 py-3">
+          {tab === 'today' && <Logo size={22} className="text-protein" />}
           <h1 className="text-lg font-bold tracking-tight">{TAB_TITLES[tab]}</h1>
         </div>
       </header>

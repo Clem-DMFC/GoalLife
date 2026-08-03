@@ -112,6 +112,14 @@ _Authentication_ → _Emails_ → _Magic Link_ et y insérer `{{ .Token }}`.
 
 ## PWA / iOS
 
+- Icônes : `public/icons/icon.svg` (tuile « any ») et `icon-maskable.svg` (marge de
+  sécurité pour Android, qui rogne l'icône selon la forme du lanceur). Les PNG en sont
+  dérivés — pour les régénérer sans dépendance supplémentaire :
+
+  ```bash
+  chrome --headless --screenshot=icon-512.png --window-size=512,512 file:///.../icon.svg
+  ```
+
 - `public/manifest.webmanifest` + `public/sw.js` (service worker minimal : coquille en
   cache, requêtes Supabase toujours réseau). Le SW n'est enregistré qu'en production.
 - Meta tags Apple dans `index.html` : `apple-mobile-web-app-capable`,
