@@ -33,11 +33,16 @@ export function Auth() {
     if (busy) return
     setBusy(true)
     setError(null)
-    const { error } = await supabase.auth.verifyOtp({
-      email: email.trim(),
-      token: code.trim(),
-      type: 'email',
-    })
+    // Selon que le compte vient d'être créé ou existait déjà, Supabase émet un
+    // token de type "signup" ou "email". On essaie les deux plutôt que de
+    // renvoyer un "Token has expired or is invalid" trompeur.
+    const attempt = (type: 'email' | 'signup' | 'magiclink') =>
+      supabase.auth.verifyOtp({ email: email.trim(), token: code.trim(), type })
+
+    let { error } = await attempt('email')
+    if (error) ({ error } = await attempt('signup'))
+    if (error) ({ error } = await attempt('magiclink'))
+
     setBusy(false)
     // En cas de succès, onAuthStateChange bascule l'app : rien à faire ici.
     if (error) setError(error.message)
@@ -76,7 +81,7 @@ export function Auth() {
               {busy ? 'Envoi…' : 'Recevoir un code'}
             </button>
             <p className="text-center text-xs text-black/40">
-              Un code à 6 chiffres arrive par email. Pas de mot de passe.
+              Un code arrive par email. Pas de mot de passe.
             </p>
           </form>
         ) : (
@@ -87,14 +92,16 @@ export function Auth() {
               </label>
               <input
                 id="auth-code"
-                className="field text-center text-2xl tracking-[0.4em]"
+                className="field text-center text-2xl tracking-[0.25em]"
                 value={code}
-                onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                // La longueur du code est configurable côté Supabase (6 à 10) :
+                // on ne tronque pas à 6, sinon un code plus long est mutilé.
+                onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 10))}
                 inputMode="numeric"
                 pattern="[0-9]*"
                 autoComplete="one-time-code"
                 enterKeyHint="go"
-                placeholder="000000"
+                placeholder="——————"
                 autoFocus
                 required
               />
@@ -102,7 +109,7 @@ export function Auth() {
             <button
               type="submit"
               className="btn-primary w-full py-3.5"
-              disabled={busy || code.length !== 6}
+              disabled={busy || code.length < 6}
             >
               {busy ? 'Vérification…' : 'Se connecter'}
             </button>
