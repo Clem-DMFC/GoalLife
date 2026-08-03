@@ -1,11 +1,12 @@
 import { useState } from 'react'
 import { Auth } from './components/Auth'
+import { ConfigError } from './components/ConfigError'
 import { IosInstallBanner } from './components/IosInstallBanner'
 import { TodayScreen } from './components/TodayScreen'
 import { WeightScreen } from './components/WeightScreen'
 import { useSession } from './hooks/useSession'
 import { useTargets } from './hooks/useTargets'
-import { supabase } from './lib/supabase'
+import { missingEnv, supabase } from './lib/supabase'
 import { today } from './lib/date'
 
 type Tab = 'today' | 'weight'
@@ -16,6 +17,8 @@ export default function App() {
   const { targets, save: saveTargets } = useTargets(userId)
   const [tab, setTab] = useState<Tab>('today')
   const [day, setDay] = useState(today())
+
+  if (missingEnv.length > 0) return <ConfigError missing={missingEnv} />
 
   if (loading) {
     return (
