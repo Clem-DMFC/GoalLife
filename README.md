@@ -1,4 +1,4 @@
-# GoalLife
+# Goatly
 
 App perso de suivi nutritionnel pour une prise de muscle : calories, macros et poids.
 Mobile-first, pensée pour être installée sur l'écran d'accueil d'un iPhone (PWA) et

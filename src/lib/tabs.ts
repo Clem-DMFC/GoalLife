@@ -2,7 +2,7 @@
 export type Tab = 'today' | 'history' | 'weight' | 'settings'
 
 export const TAB_TITLES: Record<Tab, string> = {
-  today: 'GoalLife',
+  today: 'Goatly',
   history: 'Historique',
   weight: 'Poids',
   settings: 'Réglages',

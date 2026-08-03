@@ -1,4 +1,4 @@
--- GoalLife — favoris et plats composés
+-- Goatly — favoris et plats composés
 -- À coller dans l'éditeur SQL de Supabase, après 0001_init.sql.
 
 create table if not exists public.favorites (

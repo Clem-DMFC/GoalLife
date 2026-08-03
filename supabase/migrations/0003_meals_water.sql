@@ -1,4 +1,4 @@
--- GoalLife — repas et suivi de l'eau
+-- Goatly — repas et suivi de l'eau
 -- À coller dans l'éditeur SQL de Supabase, après 0002_favorites.sql.
 
 -- ---------------------------------------------------------------------------

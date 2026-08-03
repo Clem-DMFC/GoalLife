@@ -1,4 +1,4 @@
--- GoalLife — incrément d'eau atomique
+-- Goatly — incrément d'eau atomique
 -- À coller dans l'éditeur SQL de Supabase, après 0003_meals_water.sql.
 
 -- Le total d'eau était calculé côté client (lire `ml`, ajouter, réécrire) :

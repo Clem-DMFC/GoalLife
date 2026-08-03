@@ -1,4 +1,4 @@
--- GoalLife — schéma initial
+-- Goatly — schéma initial
 -- À coller tel quel dans l'éditeur SQL de Supabase (SQL Editor > New query > Run).
 
 -- ---------------------------------------------------------------------------
