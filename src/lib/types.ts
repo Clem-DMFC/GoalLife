@@ -108,7 +108,13 @@ export type Database = {
       }
     }
     Views: Record<string, never>
-    Functions: Record<string, never>
+    Functions: {
+      /** Incrément atomique du total d'eau ; renvoie le nouveau total en ml. */
+      add_water: {
+        Args: { delta: number; target_day: string }
+        Returns: number
+      }
+    }
     Enums: Record<string, never>
     CompositeTypes: Record<string, never>
   }
