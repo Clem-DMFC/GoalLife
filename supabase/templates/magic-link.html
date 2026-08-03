@@ -1,0 +1,109 @@
+<!--
+  GoalLife — email de connexion (code à 6 chiffres)
+  À coller dans Supabase : Authentication > Emails > Magic Link.
+
+  Contraintes des clients mail : pas de feuille de style externe, tout en
+  styles inline (Gmail retire les <style>), tableaux pour la mise en page.
+  Le bloc <style> ne sert qu'au thème sombre d'Apple Mail, qui le respecte —
+  ailleurs il est ignoré sans dommage, les styles inline font foi.
+
+  Ne pas toucher à {{ .Token }} : c'est Supabase qui l'injecte.
+-->
+<meta name="color-scheme" content="light dark" />
+<meta name="supported-color-schemes" content="light dark" />
+<style>
+  @media (prefers-color-scheme: dark) {
+    .gl-bg { background: #0E1011 !important; }
+    .gl-card { background: #191C1D !important; border-color: #2A2E2F !important; }
+    .gl-ink { color: #EDEFEE !important; }
+    .gl-muted { color: #9BA09E !important; }
+    .gl-code-box { background: #202702 !important; border-color: #3D4A0A !important; }
+    .gl-code { color: #B8F135 !important; }
+  }
+</style>
+
+<div style="display:none;max-height:0;overflow:hidden;opacity:0;">
+  Ton code de connexion GoalLife : {{ .Token }}
+</div>
+
+<table
+  class="gl-bg"
+  role="presentation"
+  width="100%"
+  cellpadding="0"
+  cellspacing="0"
+  border="0"
+  style="background:#F7F8F7;margin:0;padding:32px 16px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;"
+>
+  <tr>
+    <td align="center">
+      <table
+        class="gl-card"
+        role="presentation"
+        width="100%"
+        cellpadding="0"
+        cellspacing="0"
+        border="0"
+        style="max-width:440px;background:#FFFFFF;border:1px solid #EAEBEA;border-radius:20px;overflow:hidden;"
+      >
+        <tr>
+          <td style="height:4px;background:#B8F135;font-size:0;line-height:0;">&nbsp;</td>
+        </tr>
+
+        <tr>
+          <td style="padding:28px 28px 0;">
+            <div class="gl-ink" style="font-size:19px;font-weight:700;letter-spacing:-0.3px;color:#0F1314;">
+              GoalLife
+            </div>
+            <p class="gl-muted" style="margin:14px 0 0;font-size:15px;line-height:1.5;color:#5C6360;">
+              Voici ton code de connexion. Saisis-le dans l'app pour ouvrir ta session.
+            </p>
+          </td>
+        </tr>
+
+        <tr>
+          <td style="padding:20px 28px 0;">
+            <table
+              class="gl-code-box"
+              role="presentation"
+              width="100%"
+              cellpadding="0"
+              cellspacing="0"
+              border="0"
+              style="background:#F4FBE4;border:1px solid #DDF29B;border-radius:14px;"
+            >
+              <tr>
+                <td align="center" style="padding:22px 12px;">
+                  <div
+                    class="gl-code"
+                    style="font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:34px;font-weight:600;letter-spacing:8px;text-indent:8px;color:#2C3D06;"
+                  >
+                    {{ .Token }}
+                  </div>
+                </td>
+              </tr>
+            </table>
+            <p class="gl-muted" style="margin:12px 0 0;font-size:13px;line-height:1.5;color:#8A908D;">
+              Ce code expire dans 1 heure et ne fonctionne qu'une fois.
+            </p>
+          </td>
+        </tr>
+
+        <tr>
+          <td style="padding:22px 28px 28px;">
+            <div style="height:1px;background:#EEEFEE;font-size:0;line-height:0;">&nbsp;</div>
+            <p class="gl-muted" style="margin:18px 0 0;font-size:13px;line-height:1.6;color:#8A908D;">
+              Tu n'as pas demandé à te connecter ? Ignore ce message, personne ne peut
+              entrer sans ce code. Ne le transmets à personne : il donne accès à ton
+              suivi.
+            </p>
+          </td>
+        </tr>
+      </table>
+
+      <p class="gl-muted" style="margin:18px 0 0;font-size:12px;color:#A2A7A4;">
+        GoalLife — suivi nutritionnel personnel
+      </p>
+    </td>
+  </tr>
+</table>
