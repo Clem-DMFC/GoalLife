@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Auth } from './components/Auth'
+import { ToastProvider } from './components/Toaster'
 import { BottomNav } from './components/BottomNav'
 import { ConfigError } from './components/ConfigError'
 import { HistoryScreen } from './components/HistoryScreen'
@@ -37,54 +38,56 @@ export default function App() {
   if (!session || !userId) return <Auth />
 
   return (
-    <div className="safe-x mx-auto flex min-h-[100dvh] max-w-md flex-col">
-      <header className="safe-top sticky top-0 z-30 bg-canvas/90 backdrop-blur">
-        {/* La marque n'accompagne que l'écran du jour : ailleurs, le titre
+    <ToastProvider>
+      <div className="safe-x mx-auto flex min-h-[100dvh] max-w-md flex-col">
+        <header className="safe-top sticky top-0 z-30 bg-canvas/90 backdrop-blur">
+          {/* La marque n'accompagne que l'écran du jour : ailleurs, le titre
             indique où l'on se trouve, et un logo répété n'apporterait rien. */}
-        <div className="flex items-center gap-2 px-4 py-3">
-          {tab === 'today' && <Logo size={22} className="text-protein" />}
-          <h1 className="text-lg font-bold tracking-tight">{TAB_TITLES[tab]}</h1>
-        </div>
-      </header>
+          <div className="flex items-center gap-2 px-4 py-3">
+            {tab === 'today' && <Logo size={22} className="text-protein" />}
+            <h1 className="text-lg font-bold tracking-tight">{TAB_TITLES[tab]}</h1>
+          </div>
+        </header>
 
-      {/* pb-28 : la barre de navigation est fixe et inclut la safe area de la
+        {/* pb-28 : la barre de navigation est fixe et inclut la safe area de la
           barre home ; le contenu doit défiler jusqu'au bout sans finir dessous. */}
-      <main className="flex-1 space-y-3 px-4 pb-28 pt-1">
-        <IosInstallBanner />
-        {tab === 'today' && (
-          <TodayScreen
-            userId={userId}
-            day={day}
-            onDayChange={setDay}
-            targets={targets}
-            addOpen={addOpen}
-            onAddOpenChange={setAddOpen}
-          />
-        )}
-        {tab === 'history' && (
-          <HistoryScreen
-            userId={userId}
-            targetKcal={targets.kcal}
-            onPickDay={(d) => {
-              setDay(d)
-              setTab('today')
-            }}
-          />
-        )}
-        {tab === 'weight' && <WeightScreen userId={userId} />}
-        {tab === 'settings' && (
-          <SettingsScreen email={session.user.email} targets={targets} onSave={saveTargets} />
-        )}
-      </main>
+        <main className="flex-1 space-y-3 px-4 pb-28 pt-1">
+          <IosInstallBanner />
+          {tab === 'today' && (
+            <TodayScreen
+              userId={userId}
+              day={day}
+              onDayChange={setDay}
+              targets={targets}
+              addOpen={addOpen}
+              onAddOpenChange={setAddOpen}
+            />
+          )}
+          {tab === 'history' && (
+            <HistoryScreen
+              userId={userId}
+              targetKcal={targets.kcal}
+              onPickDay={(d) => {
+                setDay(d)
+                setTab('today')
+              }}
+            />
+          )}
+          {tab === 'weight' && <WeightScreen userId={userId} />}
+          {tab === 'settings' && (
+            <SettingsScreen email={session.user.email} targets={targets} onSave={saveTargets} />
+          )}
+        </main>
 
-      <BottomNav
-        tab={tab}
-        onTabChange={setTab}
-        onAdd={() => {
-          setTab('today')
-          setAddOpen(true)
-        }}
-      />
-    </div>
+        <BottomNav
+          tab={tab}
+          onTabChange={setTab}
+          onAdd={() => {
+            setTab('today')
+            setAddOpen(true)
+          }}
+        />
+      </div>
+    </ToastProvider>
   )
 }

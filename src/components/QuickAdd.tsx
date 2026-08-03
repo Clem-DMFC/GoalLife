@@ -69,7 +69,7 @@ export function QuickAdd({
 }: {
   favorites: Favorite[]
   recents: Recent[]
-  onAdd: (entry: NewEntry) => Promise<void>
+  onAdd: (entry: NewEntry) => Promise<boolean>
   onSaveFavorite: (fav: NewFavorite) => Promise<void>
   onRemoveFavorite: (id: string) => Promise<void>
 }) {

@@ -25,7 +25,8 @@ export function AddSheet({
   favorites: Favorite[]
   recents: Recent[]
   onClose: () => void
-  onAdd: (entry: NewEntry) => Promise<void>
+  /** Renvoie `true` si l'entrée a bien été écrite — sinon la feuille reste. */
+  onAdd: (entry: NewEntry) => Promise<boolean>
   onSaveFavorite: (fav: NewFavorite) => Promise<void>
   onRemoveFavorite: (id: string) => Promise<void>
 }) {

@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { HistoryCard } from './HistoryCard'
+import { useToast } from './Toaster'
 import { useHistory, weeklyAverage } from '../hooks/useHistory'
 import { labelCompact, today } from '../lib/date'
 import { duplicateDay } from '../lib/entries'
@@ -16,27 +17,24 @@ export function HistoryScreen({
 }) {
   const { rows, loading, reload } = useHistory(userId, 14)
   const [duplicating, setDuplicating] = useState<string | null>(null)
-  const [notice, setNotice] = useState<string | null>(null)
-  const [error, setError] = useState<string | null>(null)
+  const toast = useToast()
   const week = weeklyAverage(rows)
 
   // Duplication alimentaire seule : ni l'eau ni le poids ne sont recopiés.
   const duplicate = async (day: string) => {
     setDuplicating(day)
-    setNotice(null)
-    setError(null)
     try {
       const count = await duplicateDay(userId, day, today())
-      setNotice(
-        count === 0
-          ? `Rien à copier depuis ${labelCompact(day)}.`
-          : `${count} entrée${count > 1 ? 's' : ''} du ${labelCompact(day)} copiée${
-              count > 1 ? 's' : ''
-            } sur aujourd’hui.`
-      )
+      if (count === 0) toast.error(`Rien à copier depuis ${labelCompact(day)}.`)
+      else
+        toast.success(
+          `${count} entrée${count > 1 ? 's' : ''} du ${labelCompact(day)} copiée${
+            count > 1 ? 's' : ''
+          } sur aujourd’hui`
+        )
       await reload()
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Échec de la duplication')
+      toast.error(err instanceof Error ? err.message : 'Échec de la duplication')
     } finally {
       setDuplicating(null)
     }
@@ -54,9 +52,6 @@ export function HistoryScreen({
           {week.days > 0 ? `sur ${week.days} jour${week.days > 1 ? 's' : ''} renseigné${week.days > 1 ? 's' : ''}` : 'pas encore de données cette semaine'}
         </div>
       </div>
-
-      {notice && <p className="px-1 text-sm text-protein">{notice}</p>}
-      {error && <p className="px-1 text-sm text-danger">{error}</p>}
 
       {loading ? (
         <div className="card text-center text-sm text-ink/30">Chargement…</div>

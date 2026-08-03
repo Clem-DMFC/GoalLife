@@ -7,7 +7,8 @@ export function EntryForm({
   onAdd,
   variant = 'inline',
 }: {
-  onAdd: (entry: NewEntry) => Promise<void>
+  /** Renvoie `true` si l'entrée a bien été écrite — sinon le formulaire reste. */
+  onAdd: (entry: NewEntry) => Promise<boolean>
   /** 'tab' : toujours affiché, sans bouton de repli — utilisé dans AddSheet. */
   variant?: 'inline' | 'tab'
 }) {
@@ -28,13 +29,15 @@ export function EntryForm({
     if (!form.name.trim() || busy) return
     setBusy(true)
     try {
-      await onAdd({
+      const ok = await onAdd({
         name: form.name.trim(),
         kcal: num(form.kcal),
         protein: num(form.protein),
         carbs: num(form.carbs),
         fat: num(form.fat),
       })
+      // Sur échec la saisie reste à l'écran : rien à retaper.
+      if (!ok) return
       setForm(EMPTY)
       if (variant === 'inline') setOpen(false)
     } finally {

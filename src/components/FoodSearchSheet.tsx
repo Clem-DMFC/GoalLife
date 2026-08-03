@@ -35,7 +35,8 @@ export function FoodSearchSheet({
   meal: MealType
   onMealChange: (meal: MealType) => void
   onClose: () => void
-  onAdd: (entry: NewEntry) => Promise<void>
+  /** Renvoie `true` si l'entrée a bien été écrite — sinon la feuille reste. */
+  onAdd: (entry: NewEntry) => Promise<boolean>
   onSaveFavorite: (fav: NewFavorite) => Promise<void>
 }) {
   const [query, setQuery] = useState('')
@@ -103,8 +104,9 @@ export function FoodSearchSheet({
   const addToDay = async (name: string, m: MacroTotals) => {
     setBusy(true)
     try {
-      await onAdd({ name, ...m })
-      onClose()
+      // Sur échec on garde la feuille ouverte : la saisie n'est pas perdue et
+      // le toast d'erreur explique pourquoi rien n'a bougé.
+      if (await onAdd({ name, ...m })) onClose()
     } finally {
       setBusy(false)
     }
@@ -124,7 +126,7 @@ export function FoodSearchSheet({
     if (!name || basket.length === 0) return
     setBusy(true)
     try {
-      await onAdd({ name, ...basketTotals })
+      if (!(await onAdd({ name, ...basketTotals }))) return
       await onSaveFavorite({ name, ...basketTotals, items: basket })
       onClose()
     } finally {

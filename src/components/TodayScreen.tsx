@@ -5,12 +5,22 @@ import { MealSections } from './MealSections'
 import { RepeatYesterday } from './RepeatYesterday'
 import { RingsPanel } from './RingsPanel'
 import { WaterBar } from './WaterBar'
+import { useToast } from './Toaster'
 import { useFoodEntries, type NewEntry } from '../hooks/useFoodEntries'
 import { useFavorites } from '../hooks/useFavorites'
 import { useRecents } from '../hooks/useRecents'
 import { useWater } from '../hooks/useWater'
 import { today } from '../lib/date'
+import { MEAL_LABELS, OTHER_LABEL } from '../lib/meals'
 import type { FoodEntry, TargetValues } from '../lib/types'
+
+/** « Ajouté au déjeuner », « Ajouté à la collation » — l'article suit le repas. */
+function addedTo(entry: NewEntry): string {
+  if (!entry.meal_type) return `${entry.name} ajouté (${OTHER_LABEL.toLowerCase()})`
+  const label = MEAL_LABELS[entry.meal_type].toLowerCase()
+  const article = entry.meal_type === 'collation' ? 'à la' : 'au'
+  return `${entry.name} ajouté ${article} ${label}`
+}
 
 export function TodayScreen({
   userId,
@@ -33,11 +43,23 @@ export function TodayScreen({
   const [dataKey, setDataKey] = useState(0)
   const { recents } = useRecents(userId, dataKey)
   const { favorites, add: addFavorite, remove: removeFavorite } = useFavorites(userId)
+  const toast = useToast()
 
-  // Les récents se recalculent après chaque écriture.
-  const addEntry = async (entry: NewEntry) => {
-    await add(entry)
+  /**
+   * Renvoie si l'écriture a abouti, au lieu de propager l'erreur : la feuille
+   * d'ajout ne se referme que sur un vrai succès, et l'échec se voit.
+   * Les récents se recalculent après chaque écriture.
+   */
+  const addEntry = async (entry: NewEntry): Promise<boolean> => {
+    try {
+      await add(entry)
+    } catch {
+      toast.error(`« ${entry.name} » n'a pas pu être ajouté. Réessaie.`)
+      return false
+    }
     setDataKey((k) => k + 1)
+    toast.success(addedTo(entry))
+    return true
   }
 
   // Sur un jour passé, copier un repas le recrée sur aujourd'hui — c'est ce
@@ -46,8 +68,27 @@ export function TodayScreen({
   const copyTarget = isToday ? day : today()
 
   const copyEntries = async (of: FoodEntry[]) => {
-    await copy(of, copyTarget)
+    try {
+      await copy(of, copyTarget)
+    } catch {
+      toast.error('La copie a échoué. Réessaie.')
+      return
+    }
     setDataKey((k) => k + 1)
+    const where = copyTarget === day ? '' : ' sur aujourd’hui'
+    toast.success(`${of.length} entrée${of.length > 1 ? 's' : ''} copiée${of.length > 1 ? 's' : ''}${where}`)
+  }
+
+  const removeEntry = async (id: string) => {
+    const gone = entries.find((e) => e.id === id)
+    try {
+      await remove(id)
+    } catch {
+      toast.error('Suppression impossible. Réessaie.')
+      return
+    }
+    setDataKey((k) => k + 1)
+    toast.success(`${gone?.name ?? 'Entrée'} supprimé`)
   }
 
   return (
@@ -75,10 +116,7 @@ export function TodayScreen({
           ) : (
             <MealSections
               entries={entries}
-              onRemove={async (id) => {
-                await remove(id)
-                setDataKey((k) => k + 1)
-              }}
+              onRemove={removeEntry}
               onCopy={copyEntries}
               copyLabel={isToday ? 'Dupliquer le repas' : 'Copier vers aujourd’hui'}
             />
