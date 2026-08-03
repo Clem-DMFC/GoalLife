@@ -3,8 +3,15 @@ import type { NewEntry } from '../hooks/useFoodEntries'
 
 const EMPTY = { name: '', kcal: '', protein: '', carbs: '', fat: '' }
 
-export function EntryForm({ onAdd }: { onAdd: (entry: NewEntry) => Promise<void> }) {
-  const [open, setOpen] = useState(false)
+export function EntryForm({
+  onAdd,
+  variant = 'inline',
+}: {
+  onAdd: (entry: NewEntry) => Promise<void>
+  /** 'tab' : toujours affiché, sans bouton de repli — utilisé dans AddSheet. */
+  variant?: 'inline' | 'tab'
+}) {
+  const [open, setOpen] = useState(variant === 'tab')
   const [form, setForm] = useState(EMPTY)
   const [busy, setBusy] = useState(false)
 
@@ -29,7 +36,7 @@ export function EntryForm({ onAdd }: { onAdd: (entry: NewEntry) => Promise<void>
         fat: num(form.fat),
       })
       setForm(EMPTY)
-      setOpen(false)
+      if (variant === 'inline') setOpen(false)
     } finally {
       setBusy(false)
     }
@@ -44,7 +51,7 @@ export function EntryForm({ onAdd }: { onAdd: (entry: NewEntry) => Promise<void>
   }
 
   return (
-    <form className="card space-y-3" onSubmit={submit}>
+    <form className={variant === 'tab' ? 'space-y-3' : 'card space-y-3'} onSubmit={submit}>
       <div>
         <label className="label" htmlFor="entry-name">
           Aliment
@@ -87,16 +94,18 @@ export function EntryForm({ onAdd }: { onAdd: (entry: NewEntry) => Promise<void>
       </div>
 
       <div className="flex gap-2">
-        <button
-          type="button"
-          className="btn-ghost flex-1 py-3"
-          onClick={() => {
-            setForm(EMPTY)
-            setOpen(false)
-          }}
-        >
-          Annuler
-        </button>
+        {variant === 'inline' && (
+          <button
+            type="button"
+            className="btn-ghost flex-1 py-3"
+            onClick={() => {
+              setForm(EMPTY)
+              setOpen(false)
+            }}
+          >
+            Annuler
+          </button>
+        )}
         <button
           type="submit"
           className="btn-primary flex-1 py-3"

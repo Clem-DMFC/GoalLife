@@ -1,7 +1,9 @@
 import { useState } from 'react'
 import { Auth } from './components/Auth'
 import { ConfigError } from './components/ConfigError'
+import { HistoryScreen } from './components/HistoryScreen'
 import { IosInstallBanner } from './components/IosInstallBanner'
+import { TargetsSheet } from './components/TargetsSheet'
 import { TodayScreen } from './components/TodayScreen'
 import { WeightScreen } from './components/WeightScreen'
 import { useSession } from './hooks/useSession'
@@ -9,7 +11,7 @@ import { useTargets } from './hooks/useTargets'
 import { missingEnv, supabase } from './lib/supabase'
 import { today } from './lib/date'
 
-type Tab = 'today' | 'weight'
+type Tab = 'today' | 'history' | 'weight'
 
 export default function App() {
   const { session, loading } = useSession()
@@ -17,6 +19,7 @@ export default function App() {
   const { targets, save: saveTargets } = useTargets(userId)
   const [tab, setTab] = useState<Tab>('today')
   const [day, setDay] = useState(today())
+  const [targetsOpen, setTargetsOpen] = useState(false)
 
   if (missingEnv.length > 0) return <ConfigError missing={missingEnv} />
 
@@ -35,19 +38,30 @@ export default function App() {
       <header className="safe-top sticky top-0 z-30 bg-canvas/90 backdrop-blur">
         <div className="flex items-center justify-between px-4 py-3">
           <h1 className="text-lg font-bold tracking-tight">GoalLife</h1>
-          <button
-            type="button"
-            className="tap flex items-center rounded-lg px-2 text-xs text-ink/40"
-            onClick={() => void supabase.auth.signOut()}
-          >
-            Déconnexion
-          </button>
+          <div className="flex items-center gap-1">
+            <button
+              type="button"
+              aria-label="Objectifs"
+              className="tap flex h-9 w-9 items-center justify-center rounded-lg text-ink/50"
+              onClick={() => setTargetsOpen(true)}
+            >
+              ⚙
+            </button>
+            <button
+              type="button"
+              className="tap flex items-center rounded-lg px-2 text-xs text-ink/40"
+              onClick={() => void supabase.auth.signOut()}
+            >
+              Déconnexion
+            </button>
+          </div>
         </div>
 
         <nav className="flex gap-1 px-4 pb-2">
           {(
             [
               ['today', 'Aujourd’hui'],
+              ['history', 'Historique'],
               ['weight', 'Poids'],
             ] as const
           ).map(([key, label]) => (
@@ -67,18 +81,27 @@ export default function App() {
 
       <main className="safe-bottom flex-1 space-y-3 px-4 pb-10 pt-1">
         <IosInstallBanner />
-        {tab === 'today' ? (
-          <TodayScreen
+        {tab === 'today' && <TodayScreen userId={userId} day={day} onDayChange={setDay} targets={targets} />}
+        {tab === 'history' && (
+          <HistoryScreen
             userId={userId}
-            day={day}
-            onDayChange={setDay}
-            targets={targets}
-            onSaveTargets={saveTargets}
+            targetKcal={targets.kcal}
+            onPickDay={(d) => {
+              setDay(d)
+              setTab('today')
+            }}
           />
-        ) : (
-          <WeightScreen userId={userId} />
         )}
+        {tab === 'weight' && <WeightScreen userId={userId} />}
       </main>
+
+      {targetsOpen && (
+        <TargetsSheet
+          targets={targets}
+          onClose={() => setTargetsOpen(false)}
+          onSave={saveTargets}
+        />
+      )}
     </div>
   )
 }
