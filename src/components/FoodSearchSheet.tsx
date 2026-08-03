@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { scaleToGrams, searchFoods, type Food } from '../lib/openfoodfacts'
+import { scaleToGrams, searchFoods, SearchError, type Food } from '../lib/openfoodfacts'
 import { EMPTY_TOTALS, type MacroTotals, type RecipeItem } from '../lib/types'
 import type { NewEntry } from '../hooks/useFoodEntries'
 import type { NewFavorite } from '../hooks/useFavorites'
@@ -75,7 +75,12 @@ export function FoodSearchSheet({
         })
         .catch((err: unknown) => {
           if (err instanceof DOMException && err.name === 'AbortError') return
-          setError("Recherche indisponible. Vérifie ta connexion.")
+          // Remonter le motif réel : « indisponible » cache trop de causes.
+          setError(
+            err instanceof SearchError
+              ? err.message
+              : "Recherche injoignable. Vérifie ta connexion, ou saisis les valeurs à la main."
+          )
         })
         .finally(() => setSearching(false))
     }, 400)

@@ -4,9 +4,18 @@ import type { MacroTotals } from './types'
  * Recherche d'aliments dans Open Food Facts.
  * Base collaborative, gratuite, sans clé d'API, très fournie en produits
  * vendus en France. L'appel part directement du navigateur (CORS ouvert).
+ *
+ * Deux endpoints : l'API de recherche actuelle (Search-a-licious), et
+ * l'ancienne `cgi/search.pl` en repli. Cette dernière est fortement limitée
+ * pour les requêtes anonymes et renvoie souvent une page « service
+ * indisponible » plutôt que du JSON — d'où l'ordre.
  */
 
-const ENDPOINT = 'https://fr.openfoodfacts.org/cgi/search.pl'
+const SEARCH_ENDPOINT = 'https://search.openfoodfacts.org/search'
+const LEGACY_ENDPOINT = 'https://world.openfoodfacts.org/cgi/search.pl'
+
+const FIELDS =
+  'code,product_name,product_name_fr,generic_name,brands,serving_size,serving_quantity,nutriments'
 
 export type Food = {
   code: string
@@ -85,21 +94,48 @@ function toFood(p: OffProduct): Food | null {
   }
 }
 
+/** Erreur de recherche portant un message affichable tel quel. */
+export class SearchError extends Error {}
+
+/** Les deux endpoints ne nomment pas la liste pareil : `hits` vs `products`. */
+async function fetchProducts(url: string, signal?: AbortSignal): Promise<OffProduct[]> {
+  const res = await fetch(url, { signal, headers: { Accept: 'application/json' } })
+
+  if (res.status === 429) {
+    throw new SearchError('Trop de recherches. Attends une minute et réessaie.')
+  }
+  if (!res.ok) {
+    throw new SearchError(`Open Food Facts a répondu ${res.status}.`)
+  }
+  // Quand l'API sature, elle renvoie une page HTML « service indisponible »
+  // avec un statut 200 : sans cette garde, le .json() lève une erreur opaque.
+  const type = res.headers.get('content-type') ?? ''
+  if (!type.includes('json')) {
+    throw new SearchError('Open Food Facts est momentanément indisponible.')
+  }
+
+  const data = (await res.json()) as { hits?: OffProduct[]; products?: OffProduct[] } | null
+  return data?.hits ?? data?.products ?? []
+}
+
 export async function searchFoods(query: string, signal?: AbortSignal): Promise<Food[]> {
   const term = query.trim()
   if (term.length < 2) return []
 
-  const url =
-    `${ENDPOINT}?search_terms=${encodeURIComponent(term)}` +
-    '&search_simple=1&action=process&json=1&page_size=25' +
-    '&fields=code,product_name,product_name_fr,generic_name,brands,serving_size,serving_quantity,nutriments'
+  const q = encodeURIComponent(term)
+  const primary = `${SEARCH_ENDPOINT}?q=${q}&page_size=25&fields=${FIELDS}`
+  const legacy =
+    `${LEGACY_ENDPOINT}?search_terms=${q}&search_simple=1&action=process&json=1` +
+    `&page_size=25&fields=${FIELDS}`
 
-  const res = await fetch(url, { signal })
-  if (!res.ok) throw new Error(`Open Food Facts a répondu ${res.status}`)
-
-  const data: unknown = await res.json()
-  const products = (data as { products?: OffProduct[] } | null)?.products
-  if (!Array.isArray(products)) return []
+  let products: OffProduct[]
+  try {
+    products = await fetchProducts(primary, signal)
+  } catch (err) {
+    if (err instanceof DOMException && err.name === 'AbortError') throw err
+    // L'ancienne API reste utile quand la nouvelle ne connaît pas le terme.
+    products = await fetchProducts(legacy, signal)
+  }
 
   const seen = new Set<string>()
   const foods: Food[] = []
