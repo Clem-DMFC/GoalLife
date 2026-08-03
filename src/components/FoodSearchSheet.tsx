@@ -135,7 +135,7 @@ export function FoodSearchSheet({
         </h2>
         <button
           type="button"
-          className="tap flex w-11 items-center justify-center rounded-xl bg-white text-black/40 shadow-sm"
+          className="tap flex w-11 items-center justify-center rounded-xl bg-surface text-ink/40 shadow-sm"
           onClick={onClose}
           aria-label="Fermer"
         >
@@ -145,19 +145,19 @@ export function FoodSearchSheet({
 
       {showBasket ? (
         <div className="flex-1 space-y-3 overflow-y-auto px-4 pb-4">
-          <ul className="card divide-y divide-black/5 p-0">
+          <ul className="card divide-y divide-ink/5 p-0">
             {basket.map((item, i) => (
               <li key={`${item.name}-${i}`} className="flex items-center gap-2 px-4 py-2.5">
                 <div className="min-w-0 flex-1">
                   <div className="truncate text-sm font-medium">{item.name}</div>
-                  <div className="font-mono text-[11px] text-black/50">
+                  <div className="font-mono text-[11px] text-ink/50">
                     {item.grams} g · {item.kcal} kcal
                   </div>
                 </div>
                 <button
                   type="button"
                   aria-label={`Retirer ${item.name}`}
-                  className="tap flex w-11 items-center justify-center rounded-lg text-black/30"
+                  className="tap flex w-11 items-center justify-center rounded-lg text-ink/30"
                   onClick={() => setBasket((prev) => prev.filter((_, j) => j !== i))}
                 >
                   ✕
@@ -180,7 +180,7 @@ export function FoodSearchSheet({
               />
             </div>
             <MacroLine totals={basketTotals} />
-            <p className="text-[11px] leading-snug text-black/40">
+            <p className="text-[11px] leading-snug text-ink/40">
               Le plat est ajouté au jour et enregistré dans tes favoris, réutilisable en un
               tap.
             </p>
@@ -226,9 +226,9 @@ export function FoodSearchSheet({
                 <div>
                   <div className="font-semibold leading-tight">{selected.name}</div>
                   {selected.brand && (
-                    <div className="text-[11px] text-black/40">{selected.brand}</div>
+                    <div className="text-[11px] text-ink/40">{selected.brand}</div>
                   )}
-                  <div className="mt-1 font-mono text-[11px] text-black/45">
+                  <div className="mt-1 font-mono text-[11px] text-ink/45">
                     {Math.round(selected.per100.kcal)} kcal / 100 g
                   </div>
                 </div>
@@ -251,7 +251,7 @@ export function FoodSearchSheet({
                   {selected.servingGrams && (
                     <button
                       type="button"
-                      className="tap rounded-lg bg-protein/10 px-3 py-1.5 font-mono text-xs text-protein"
+                      className="tap rounded-lg bg-accent/15 px-3 py-1.5 font-mono text-xs text-protein"
                       onClick={() => setGrams(String(Math.round(selected.servingGrams!)))}
                     >
                       1 portion · {Math.round(selected.servingGrams)} g
@@ -261,7 +261,7 @@ export function FoodSearchSheet({
                     <button
                       key={g}
                       type="button"
-                      className="tap rounded-lg bg-black/5 px-3 py-1.5 font-mono text-xs"
+                      className="tap rounded-lg bg-ink/5 px-3 py-1.5 font-mono text-xs"
                       onClick={() => setGrams(String(g))}
                     >
                       {g} g
@@ -293,19 +293,19 @@ export function FoodSearchSheet({
             )}
 
             {searching && (
-              <div className="card text-center text-sm text-black/30">Recherche…</div>
+              <div className="card text-center text-sm text-ink/30">Recherche…</div>
             )}
 
-            {error && <div className="card text-sm text-protein">{error}</div>}
+            {error && <div className="card text-sm text-danger">{error}</div>}
 
             {!searching && !error && touched && results.length === 0 && query.trim().length >= 2 && (
-              <div className="card text-center text-sm text-black/40">
+              <div className="card text-center text-sm text-ink/40">
                 Aucun résultat. Essaie un nom plus simple, ou saisis les valeurs à la main.
               </div>
             )}
 
             {results.length > 0 && (
-              <ul className="card divide-y divide-black/5 p-0">
+              <ul className="card divide-y divide-ink/5 p-0">
                 {results.map((f) => (
                   <li key={f.code}>
                     <button
@@ -318,13 +318,13 @@ export function FoodSearchSheet({
                     >
                       <div className="min-w-0 flex-1">
                         <div className="truncate text-sm font-medium">{f.name}</div>
-                        <div className="truncate text-[11px] text-black/40">
+                        <div className="truncate text-[11px] text-ink/40">
                           {f.brand || 'sans marque'}
                         </div>
                       </div>
-                      <div className="shrink-0 text-right font-mono text-[11px] tabular-nums text-black/50">
+                      <div className="shrink-0 text-right font-mono text-[11px] tabular-nums text-ink/50">
                         {Math.round(f.per100.kcal)} kcal
-                        <div className="text-black/30">/ 100 g</div>
+                        <div className="text-ink/30">/ 100 g</div>
                       </div>
                     </button>
                   </li>
@@ -333,7 +333,7 @@ export function FoodSearchSheet({
             )}
 
             {!touched && (
-              <p className="px-1 text-[12px] leading-snug text-black/40">
+              <p className="px-1 text-[12px] leading-snug text-ink/40">
                 Les données viennent d'Open Food Facts, une base collaborative. Les valeurs
                 sont celles de l'emballage : fiables pour les produits industriels, absentes
                 pour beaucoup de produits frais.
@@ -346,7 +346,7 @@ export function FoodSearchSheet({
       {basket.length > 0 && !showBasket && (
         <button
           type="button"
-          className="safe-bottom tap mx-4 mb-4 flex items-center justify-between rounded-2xl bg-ink px-4 py-3 text-white"
+          className="safe-bottom tap mx-4 mb-4 flex items-center justify-between rounded-2xl bg-ink px-4 py-3 text-canvas"
           onClick={() => setShowBasket(true)}
         >
           <span className="text-sm font-medium">

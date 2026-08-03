@@ -1,11 +1,25 @@
 import { Ring } from './Ring'
 import type { MacroTotals } from '../lib/types'
 
-const COLORS = {
-  kcal: '#16181D',
-  protein: '#F2542D',
-  carbs: '#3B82C4',
-  fat: '#E0A82E',
+/*
+ * Couleurs lues depuis les variables CSS du thème (index.css), donc
+ * automatiquement adaptées au mode sombre de l'iPhone. `accent` est la teinte
+ * vive utilisée pour le trait de l'anneau ; `protein` est sa variante
+ * assombrie, réservée au texte "+X restants" pour rester lisible sur fond
+ * blanc en thème clair.
+ */
+const STROKE = {
+  kcal: 'rgb(var(--color-ink))',
+  protein: 'rgb(var(--color-accent))',
+  carbs: 'rgb(var(--color-carbs))',
+  fat: 'rgb(var(--color-fat))',
+} as const
+
+const LABEL = {
+  kcal: 'rgb(var(--color-ink))',
+  protein: 'rgb(var(--color-protein))',
+  carbs: 'rgb(var(--color-carbs))',
+  fat: 'rgb(var(--color-fat))',
 } as const
 
 export function RingsPanel({
@@ -23,28 +37,32 @@ export function RingsPanel({
           value={totals.kcal}
           target={targets.kcal}
           unit="kcal"
-          color={COLORS.kcal}
+          color={STROKE.kcal}
+          labelColor={LABEL.kcal}
         />
         <Ring
           label="Protéines"
           value={totals.protein}
           target={targets.protein}
           unit="g"
-          color={COLORS.protein}
+          color={STROKE.protein}
+          labelColor={LABEL.protein}
         />
         <Ring
           label="Glucides"
           value={totals.carbs}
           target={targets.carbs}
           unit="g"
-          color={COLORS.carbs}
+          color={STROKE.carbs}
+          labelColor={LABEL.carbs}
         />
         <Ring
           label="Lipides"
           value={totals.fat}
           target={targets.fat}
           unit="g"
-          color={COLORS.fat}
+          color={STROKE.fat}
+          labelColor={LABEL.fat}
         />
       </div>
     </div>

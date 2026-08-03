@@ -17,10 +17,10 @@ export function HistoryCard({
 
   return (
     <section className="space-y-2">
-      <h2 className="px-1 text-xs font-medium uppercase tracking-wide text-black/40">
+      <h2 className="px-1 text-xs font-medium uppercase tracking-wide text-ink/40">
         Historique
       </h2>
-      <ul className="card divide-y divide-black/5 p-0">
+      <ul className="card divide-y divide-ink/5 p-0">
         {rows.map((r) => {
           const pct = target > 0 ? Math.min(1, r.kcal / target) : 0
           return (
@@ -32,18 +32,18 @@ export function HistoryCard({
               >
                 <span
                   className={`w-24 shrink-0 truncate text-sm first-letter:uppercase ${
-                    r.day === currentDay ? 'font-semibold' : 'text-black/70'
+                    r.day === currentDay ? 'font-semibold' : 'text-ink/70'
                   }`}
                 >
                   {labelCompact(r.day)}
                 </span>
-                <span className="h-1.5 flex-1 overflow-hidden rounded-full bg-black/[0.07]">
+                <span className="h-1.5 flex-1 overflow-hidden rounded-full bg-ink/[0.07]">
                   <span
                     className="block h-full rounded-full bg-ink"
                     style={{ width: `${pct * 100}%` }}
                   />
                 </span>
-                <span className="w-20 shrink-0 text-right font-mono text-[11px] tabular-nums text-black/50">
+                <span className="w-20 shrink-0 text-right font-mono text-[11px] tabular-nums text-ink/50">
                   {r.kcal} kcal
                 </span>
               </button>

@@ -52,7 +52,7 @@ export function Auth() {
     <div className="safe-top safe-bottom safe-x flex min-h-[100dvh] flex-col justify-center px-6">
       <div className="mx-auto w-full max-w-sm">
         <h1 className="text-2xl font-bold tracking-tight">GoalLife</h1>
-        <p className="mt-1 text-sm text-black/50">Calories, macros et poids. Rien d'autre.</p>
+        <p className="mt-1 text-sm text-ink/50">Calories, macros et poids. Rien d'autre.</p>
 
         {step === 'email' ? (
           <form className="mt-8 space-y-3" onSubmit={sendCode}>
@@ -80,7 +80,7 @@ export function Auth() {
             >
               {busy ? 'Envoi…' : 'Recevoir un code'}
             </button>
-            <p className="text-center text-xs text-black/40">
+            <p className="text-center text-xs text-ink/40">
               Un code arrive par email. Pas de mot de passe.
             </p>
           </form>
@@ -127,7 +127,7 @@ export function Auth() {
           </form>
         )}
 
-        {error && <p className="mt-4 text-center text-sm text-protein">{error}</p>}
+        {error && <p className="mt-4 text-center text-sm text-danger">{error}</p>}
       </div>
     </div>
   )

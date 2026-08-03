@@ -2,16 +2,78 @@
 @tailwind components;
 @tailwind utilities;
 
+/*
+ * Polices variables Geist, hébergées localement (public/fonts) — pas d'appel
+ * réseau à un CDN de polices, pas de FOUT au premier chargement offline.
+ */
+@font-face {
+  font-family: 'Geist';
+  src: url('/fonts/Geist-Variable.woff2') format('woff2-variations');
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Geist Mono';
+  src: url('/fonts/GeistMono-Variable.woff2') format('woff2-variations');
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+/*
+ * Palette en variables CSS (triplets R G B, sans "rgb()") pour que Tailwind
+ * puisse composer l'opacité via rgb(var(--x) / <alpha-value>) — ex.
+ * `text-ink/40`. Le thème sombre suit prefers-color-scheme, donc le réglage
+ * Apparence de l'iPhone (y compris auto jour/nuit) pilote l'app sans aucun
+ * bouton à prévoir dans l'interface.
+ */
+:root {
+  --color-canvas: 247 248 247; /* #F7F8F7 */
+  --color-surface: 255 255 255; /* cartes */
+  --color-ink: 15 19 20; /* texte principal */
+
+  /* Accent (lime) constant entre les deux thèmes : lisible en fond de bouton
+     ou en trait d'anneau sur claire comme sur sombre. */
+  --color-accent: 184 241 53; /* #B8F135 */
+  /* Variante utilisée comme COULEUR DE TEXTE : le lime pur est illisible en
+     texte sur fond blanc, donc en clair on assombrit ; en sombre le lime pur
+     redevient parfaitement lisible sur fond quasi noir. */
+  --color-protein: 92 122 15; /* #5C7A0F, lime foncé — lisible sur blanc */
+
+  --color-carbs: 56 189 248; /* #38BDF8 */
+  --color-fat: 217 155 12; /* #D99B0C, assombri pour la lisibilité en texte */
+
+  /* Rouge-orange dédié aux erreurs — l'ancien orange de marque, repris tel
+     quel : il n'a jamais bougé, seul son rôle change. */
+  --color-danger: 242 84 45; /* #F2542D */
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-canvas: 14 16 17; /* #0E1011 */
+    --color-surface: 25 28 29; /* #191C1D */
+    --color-ink: 237 239 238; /* #EDEFEE */
+
+    --color-protein: 184 241 53; /* lime pur, lisible sur fond sombre */
+    --color-carbs: 96 200 250;
+    --color-fat: 245 179 60;
+    --color-danger: 255 110 80;
+  }
+}
+
 @layer base {
   html {
     /* Empêche iOS de zoomer le texte en paysage. */
     -webkit-text-size-adjust: 100%;
+    color-scheme: light dark;
   }
 
   body {
     @apply bg-canvas text-ink font-sans antialiased;
-    /* Fond derrière le rebond de scroll iOS. */
-    background-color: #eef0f3;
+    /* Fond derrière le rebond de scroll iOS — suit le thème. */
+    background-color: rgb(var(--color-canvas));
     overscroll-behavior-y: none;
   }
 
@@ -36,7 +98,7 @@
 
 @layer components {
   .card {
-    @apply rounded-2xl bg-white p-4 shadow-sm;
+    @apply rounded-2xl bg-surface p-4 shadow-sm;
   }
 
   /* Cible tactile confortable au pouce. */
@@ -45,21 +107,23 @@
     -webkit-tap-highlight-color: transparent;
   }
 
+  /* Texte toujours sombre, y compris en thème clair sur fond lime : le
+     lime reste clair dans les deux thèmes, donc son texte reste fixe. */
   .btn-primary {
-    @apply tap rounded-xl bg-protein px-4 font-medium text-white disabled:opacity-40;
+    @apply tap rounded-xl bg-accent px-4 font-medium text-[#0E1300] disabled:opacity-40;
   }
 
   .btn-ghost {
-    @apply tap rounded-xl bg-black/5 px-4 font-medium text-ink disabled:opacity-40;
+    @apply tap rounded-xl bg-ink/5 px-4 font-medium text-ink disabled:opacity-40;
   }
 
   .field {
-    @apply w-full rounded-xl border border-black/10 bg-white px-3 py-3 font-mono
-           outline-none focus:border-protein focus:ring-2 focus:ring-protein/20;
+    @apply w-full rounded-xl border border-ink/10 bg-surface px-3 py-3 font-mono
+           text-ink outline-none focus:border-accent focus:ring-2 focus:ring-accent/25;
   }
 
   .label {
-    @apply mb-1 block text-xs font-medium uppercase tracking-wide text-black/45;
+    @apply mb-1 block text-xs font-medium uppercase tracking-wide text-ink/45;
   }
 
   /* Safe areas : encoche en haut, barre home en bas. */

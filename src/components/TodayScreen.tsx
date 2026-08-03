@@ -55,9 +55,9 @@ export function TodayScreen({
           Objectifs
         </button>
         {week.days > 0 && (
-          <div className="flex-1 rounded-xl bg-white px-3 py-2 text-center shadow-sm">
+          <div className="flex-1 rounded-xl bg-surface px-3 py-2 text-center shadow-sm">
             <div className="font-mono text-sm font-semibold tabular-nums">{week.avg}</div>
-            <div className="text-[10px] leading-tight text-black/40">
+            <div className="text-[10px] leading-tight text-ink/40">
               kcal / j · {week.days} j
             </div>
           </div>
@@ -76,11 +76,11 @@ export function TodayScreen({
       <EntryForm onAdd={addEntry} />
 
       <section className="space-y-2">
-        <h2 className="px-1 text-xs font-medium uppercase tracking-wide text-black/40">
+        <h2 className="px-1 text-xs font-medium uppercase tracking-wide text-ink/40">
           Entrées du jour
         </h2>
         {loading ? (
-          <div className="card text-center text-sm text-black/30">Chargement…</div>
+          <div className="card text-center text-sm text-ink/30">Chargement…</div>
         ) : (
           <EntryList
             entries={entries}
@@ -94,7 +94,7 @@ export function TodayScreen({
 
       <HistoryCard rows={rows} target={targets.kcal} currentDay={day} onPick={onDayChange} />
 
-      {error && <p className="px-1 text-sm text-protein">{error}</p>}
+      {error && <p className="px-1 text-sm text-danger">{error}</p>}
 
       {sheet === 'targets' && (
         <TargetsSheet

@@ -14,7 +14,7 @@ export function DayNav({
       <button
         type="button"
         aria-label="Jour précédent"
-        className="tap flex w-12 items-center justify-center rounded-xl bg-white text-xl shadow-sm"
+        className="tap flex w-12 items-center justify-center rounded-xl bg-surface text-xl shadow-sm"
         onClick={() => onChange(addDays(day, -1))}
       >
         ‹
@@ -22,18 +22,18 @@ export function DayNav({
 
       <button
         type="button"
-        className="tap flex flex-1 flex-col items-center justify-center rounded-xl bg-white py-2 shadow-sm"
+        className="tap flex flex-1 flex-col items-center justify-center rounded-xl bg-surface py-2 shadow-sm"
         onClick={() => onChange(today())}
         disabled={isToday}
       >
         <span className="text-sm font-semibold first-letter:uppercase">{labelDay(day)}</span>
-        <span className="font-mono text-[11px] text-black/40">{labelShort(day)}</span>
+        <span className="font-mono text-[11px] text-ink/40">{labelShort(day)}</span>
       </button>
 
       <button
         type="button"
         aria-label="Jour suivant"
-        className="tap flex w-12 items-center justify-center rounded-xl bg-white text-xl shadow-sm disabled:opacity-30"
+        className="tap flex w-12 items-center justify-center rounded-xl bg-surface text-xl shadow-sm disabled:opacity-30"
         onClick={() => onChange(addDays(day, 1))}
         disabled={isToday}
       >

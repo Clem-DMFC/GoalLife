@@ -71,7 +71,7 @@ export function WeightScreen({ userId }: { userId: string }) {
           </button>
         </div>
         <div className="flex items-center gap-2">
-          <label className="text-xs text-black/45" htmlFor="weight-day">
+          <label className="text-xs text-ink/45" htmlFor="weight-day">
             Jour
           </label>
           <input
@@ -87,43 +87,45 @@ export function WeightScreen({ userId }: { userId: string }) {
 
       <div className="grid grid-cols-2 gap-2">
         <div className="card">
-          <div className="text-[11px] uppercase tracking-wide text-black/40">Dernière</div>
+          <div className="text-[11px] uppercase tracking-wide text-ink/40">Dernière</div>
           <div className="mt-1 font-mono text-2xl font-semibold tabular-nums">
             {last ? `${last.kg.toFixed(1)}` : '—'}
-            <span className="ml-1 text-sm font-normal text-black/40">kg</span>
+            <span className="ml-1 text-sm font-normal text-ink/40">kg</span>
           </div>
-          <div className="text-[11px] text-black/40 first-letter:uppercase">
+          <div className="text-[11px] text-ink/40 first-letter:uppercase">
             {last ? labelDay(last.day) : 'aucune pesée'}
           </div>
         </div>
 
         <div className="card">
-          <div className="text-[11px] uppercase tracking-wide text-black/40">Sur 7 jours</div>
+          <div className="text-[11px] uppercase tracking-wide text-ink/40">Sur 7 jours</div>
           <div
             className="mt-1 font-mono text-2xl font-semibold tabular-nums"
-            style={{ color: trend ? (onTrack ? '#F2542D' : undefined) : undefined }}
+            style={{
+              color: trend ? (onTrack ? 'rgb(var(--color-protein))' : undefined) : undefined,
+            }}
           >
             {trend ? `${trend.delta >= 0 ? '+' : ''}${trend.delta.toFixed(2)}` : '—'}
-            <span className="ml-1 text-sm font-normal text-black/40">kg</span>
+            <span className="ml-1 text-sm font-normal text-ink/40">kg</span>
           </div>
-          <div className="text-[11px] text-black/40">
+          <div className="text-[11px] text-ink/40">
             {trend ? (onTrack ? 'dans la cible' : 'hors cible') : 'pas assez de recul'}
           </div>
         </div>
       </div>
 
       {loading ? (
-        <div className="card text-center text-sm text-black/30">Chargement…</div>
+        <div className="card text-center text-sm text-ink/30">Chargement…</div>
       ) : (
         <WeightChart weights={weights} />
       )}
 
-      <div className="card text-[13px] leading-snug text-black/55">
+      <div className="card text-[13px] leading-snug text-ink/55">
         <span className="font-semibold text-ink">Cible prise de muscle :</span> +0,25 à +0,5 kg
         par semaine. Plus vite, c'est surtout du gras ; plus lentement, la masse ne suit pas.
       </div>
 
-      {error && <p className="px-1 text-sm text-protein">{error}</p>}
+      {error && <p className="px-1 text-sm text-danger">{error}</p>}
     </div>
   )
 }

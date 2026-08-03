@@ -3,12 +3,16 @@ type RingProps = {
   value: number
   target: number
   unit: string
+  /** Couleur du trait (peut être vive : c'est un graphique, pas du texte). */
   color: string
+  /** Couleur du texte "+X restants" quand la cible est dépassée — distincte
+   * de `color` pour les teintes trop claires en texte sur fond blanc. */
+  labelColor?: string
   size?: number
 }
 
 /** Anneau de progression SVG. Dépasser la cible remplit l'anneau et l'indique en texte. */
-export function Ring({ label, value, target, unit, color, size = 92 }: RingProps) {
+export function Ring({ label, value, target, unit, color, labelColor, size = 92 }: RingProps) {
   const stroke = size * 0.11
   const r = (size - stroke) / 2
   const circumference = 2 * Math.PI * r
@@ -26,7 +30,7 @@ export function Ring({ label, value, target, unit, color, size = 92 }: RingProps
             r={r}
             fill="none"
             stroke="currentColor"
-            className="text-black/[0.07]"
+            className="text-ink/[0.07]"
             strokeWidth={stroke}
           />
           <circle
@@ -46,16 +50,16 @@ export function Ring({ label, value, target, unit, color, size = 92 }: RingProps
           <span className="font-mono text-[15px] font-semibold leading-none tabular-nums">
             {Math.round(value)}
           </span>
-          <span className="mt-0.5 font-mono text-[10px] leading-none text-black/40 tabular-nums">
+          <span className="mt-0.5 font-mono text-[10px] leading-none text-ink/40 tabular-nums">
             / {target}
           </span>
         </div>
       </div>
       <div className="text-center">
-        <div className="text-[11px] font-medium text-black/60">{label}</div>
+        <div className="text-[11px] font-medium text-ink/60">{label}</div>
         <div
           className="font-mono text-[10px] tabular-nums"
-          style={{ color: over ? color : undefined }}
+          style={{ color: over ? (labelColor ?? color) : undefined }}
         >
           {over
             ? `+${Math.round(value - target)} ${unit}`

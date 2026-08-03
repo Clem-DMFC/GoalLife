@@ -5,11 +5,15 @@ const W = 320
 const H = 140
 const PAD = { top: 12, right: 8, bottom: 20, left: 30 }
 
+// Couleurs lues depuis les variables du thème : s'adaptent au mode sombre.
+const ACCENT = 'rgb(var(--color-accent))'
+const SURFACE = 'rgb(var(--color-surface))'
+
 /** Courbe SVG des pesées (pas de lib de charts). */
 export function WeightChart({ weights }: { weights: Weight[] }) {
   if (weights.length === 0) {
     return (
-      <div className="card text-center text-sm text-black/40">
+      <div className="card text-center text-sm text-ink/40">
         Pas encore de pesée. Saisis ton poids du matin.
       </div>
     )
@@ -49,13 +53,13 @@ export function WeightChart({ weights }: { weights: Weight[] }) {
               y1={y(t)}
               y2={y(t)}
               stroke="currentColor"
-              className="text-black/[0.07]"
+              className="text-ink/[0.07]"
               strokeDasharray="3 3"
             />
             <text
               x={4}
               y={y(t) + 3}
-              className="fill-black/35"
+              className="fill-ink/35"
               style={{ fontSize: 9, fontFamily: 'ui-monospace, monospace' }}
             >
               {t.toFixed(1)}
@@ -63,8 +67,15 @@ export function WeightChart({ weights }: { weights: Weight[] }) {
           </g>
         ))}
 
-        <path d={area} fill="#F2542D" opacity={0.08} />
-        <path d={line} fill="none" stroke="#F2542D" strokeWidth={2} strokeLinejoin="round" strokeLinecap="round" />
+        <path d={area} fill={ACCENT} opacity={0.12} />
+        <path
+          d={line}
+          fill="none"
+          stroke={ACCENT}
+          strokeWidth={2}
+          strokeLinejoin="round"
+          strokeLinecap="round"
+        />
 
         {points.map((p, i) => (
           <circle
@@ -72,8 +83,8 @@ export function WeightChart({ weights }: { weights: Weight[] }) {
             cx={p.x}
             cy={p.y}
             r={i === points.length - 1 ? 4 : 2.5}
-            fill="#F2542D"
-            stroke="#fff"
+            fill={ACCENT}
+            stroke={SURFACE}
             strokeWidth={i === points.length - 1 ? 2 : 0}
           />
         ))}
@@ -81,7 +92,7 @@ export function WeightChart({ weights }: { weights: Weight[] }) {
         <text
           x={PAD.left}
           y={H - 5}
-          className="fill-black/35"
+          className="fill-ink/35"
           style={{ fontSize: 9, fontFamily: 'ui-monospace, monospace' }}
         >
           {labelShort(weights[0].day)}
@@ -90,7 +101,7 @@ export function WeightChart({ weights }: { weights: Weight[] }) {
           x={W - PAD.right}
           y={H - 5}
           textAnchor="end"
-          className="fill-black/35"
+          className="fill-ink/35"
           style={{ fontSize: 9, fontFamily: 'ui-monospace, monospace' }}
         >
           {labelShort(weights[weights.length - 1].day)}

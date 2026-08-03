@@ -56,7 +56,7 @@ export function TargetsSheet({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col justify-end bg-black/30">
+    <div className="fixed inset-0 z-50 flex flex-col justify-end bg-ink/30">
       <button
         type="button"
         aria-label="Fermer"
@@ -64,10 +64,10 @@ export function TargetsSheet({
         onClick={onClose}
       />
       <form
-        className="safe-bottom rounded-t-3xl bg-white p-5 pb-8 shadow-2xl"
+        className="safe-bottom rounded-t-3xl bg-surface p-5 pb-8 shadow-2xl"
         onSubmit={submit}
       >
-        <div className="mx-auto mb-4 h-1 w-10 rounded-full bg-black/10" />
+        <div className="mx-auto mb-4 h-1 w-10 rounded-full bg-ink/10" />
         <h2 className="mb-4 text-lg font-semibold">Objectifs quotidiens</h2>
 
         <div className="space-y-3">
@@ -75,7 +75,7 @@ export function TargetsSheet({
             <div key={f.key} className="flex items-center gap-3">
               <label className="flex-1 text-sm font-medium" htmlFor={`target-${f.key}`}>
                 {f.label}
-                <span className="ml-1 text-black/35">({f.unit})</span>
+                <span className="ml-1 text-ink/35">({f.unit})</span>
               </label>
               <input
                 id={`target-${f.key}`}
@@ -89,7 +89,7 @@ export function TargetsSheet({
           ))}
         </div>
 
-        {error && <p className="mt-3 text-sm text-protein">{error}</p>}
+        {error && <p className="mt-3 text-sm text-danger">{error}</p>}
 
         <div className="mt-5 flex gap-2">
           <button type="button" className="btn-ghost flex-1 py-3" onClick={onClose}>
