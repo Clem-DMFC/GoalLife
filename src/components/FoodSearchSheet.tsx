@@ -66,6 +66,7 @@ export function FoodSearchSheet({
     const term = query.trim()
     if (term.length < 2) {
       setResults([])
+      setError(null)
       setSearching(false)
       return
     }
@@ -73,22 +74,31 @@ export function FoodSearchSheet({
     const controller = new AbortController()
     setSearching(true)
     setTouched(true)
+    // L'erreur précédente disparaît dès qu'une nouvelle recherche part :
+    // sinon elle restait affichée au dessus des résultats qui arrivaient.
+    setError(null)
+
     const timer = setTimeout(() => {
       searchFoods(term, controller.signal)
         .then((foods) => {
+          if (controller.signal.aborted) return
           setResults(foods)
           setError(null)
+          setSearching(false)
         })
         .catch((err: unknown) => {
-          if (err instanceof DOMException && err.name === 'AbortError') return
+          // Une requête annulée appartient à une frappe périmée : elle ne doit
+          // toucher ni aux résultats, ni à l'état de chargement en cours.
+          if (controller.signal.aborted) return
+          setResults([])
           // Remonter le motif réel : « indisponible » cache trop de causes.
           setError(
             err instanceof SearchError
               ? err.message
-              : "Recherche injoignable. Vérifie ta connexion, ou saisis les valeurs à la main."
+              : 'Recherche injoignable. Vérifie ta connexion, ou saisis les valeurs à la main.'
           )
+          setSearching(false)
         })
-        .finally(() => setSearching(false))
     }, 400)
 
     return () => {
@@ -305,7 +315,11 @@ export function FoodSearchSheet({
               <div className="card text-center text-sm text-ink/30">Recherche…</div>
             )}
 
-            {error && <div className="card text-sm text-danger">{error}</div>}
+            {/* L'erreur ne s'affiche qu'à défaut de résultats : une API de
+                repli qui a répondu ne doit pas passer pour une panne. */}
+            {error && results.length === 0 && (
+              <div className="card text-sm text-danger">{error}</div>
+            )}
 
             {!searching && !error && touched && results.length === 0 && query.trim().length >= 2 && (
               <div className="card text-center text-sm text-ink/40">

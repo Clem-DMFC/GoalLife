@@ -14,8 +14,18 @@ import type { MacroTotals } from './types'
 const SEARCH_ENDPOINT = 'https://search.openfoodfacts.org/search'
 const LEGACY_ENDPOINT = 'https://world.openfoodfacts.org/cgi/search.pl'
 
+/*
+ * `product_name` est indexé en `text_lang` : le document porte la valeur
+ * brute, une sous-clé par langue (`product_name_fr`), et `product_name_main`
+ * pour la langue principale du produit — le meilleur repli quand la fiche
+ * n'est pas traduite en français.
+ */
 const FIELDS =
-  'code,product_name,product_name_fr,generic_name,brands,serving_size,serving_quantity,nutriments'
+  'code,product_name,product_name_fr,product_name_main,generic_name,brands,' +
+  'serving_size,serving_quantity,nutriments'
+
+/** Sans `langs`, l'API ne cherche que dans les sous-champs anglais. */
+const LANGS = 'fr,en'
 
 export type Food = {
   code: string
@@ -31,10 +41,11 @@ type OffNutriments = Record<string, unknown>
 
 type OffProduct = {
   code?: string
-  product_name?: string
-  product_name_fr?: string
-  generic_name?: string
-  brands?: string
+  product_name?: unknown
+  product_name_fr?: unknown
+  product_name_main?: unknown
+  generic_name?: unknown
+  brands?: unknown
   serving_quantity?: number | string
   serving_size?: string
   nutriments?: OffNutriments
@@ -69,6 +80,21 @@ function servingGrams(p: OffProduct): number | null {
   return null
 }
 
+/**
+ * Un champ traduit revient tantôt en chaîne, tantôt en objet langue → texte
+ * selon l'endpoint. On prend la première valeur exploitable.
+ */
+function text(v: unknown): string {
+  if (typeof v === 'string') return v.trim()
+  if (v && typeof v === 'object') {
+    for (const key of ['fr', 'main', 'en']) {
+      const inner = (v as Record<string, unknown>)[key]
+      if (typeof inner === 'string' && inner.trim()) return inner.trim()
+    }
+  }
+  return ''
+}
+
 function toFood(p: OffProduct): Food | null {
   const n = p.nutriments
   if (!n) return null
@@ -77,13 +103,17 @@ function toFood(p: OffProduct): Food | null {
   // Sans calories, la ligne n'a aucune valeur pour du suivi : on l'écarte.
   if (kcal === null || kcal <= 0) return null
 
-  const name = (p.product_name_fr || p.product_name || p.generic_name || '').trim()
+  const name =
+    text(p.product_name_fr) ||
+    text(p.product_name) ||
+    text(p.product_name_main) ||
+    text(p.generic_name)
   if (!name) return null
 
   return {
-    code: p.code ?? name,
+    code: String(p.code ?? name),
     name,
-    brand: (p.brands ?? '').split(',')[0]?.trim() ?? '',
+    brand: text(p.brands).split(',')[0]?.trim() ?? '',
     per100: {
       kcal,
       protein: num(n.proteins_100g) ?? 0,
@@ -96,6 +126,45 @@ function toFood(p: OffProduct): Food | null {
 
 /** Erreur de recherche portant un message affichable tel quel. */
 export class SearchError extends Error {}
+
+/** Caractères réservés par Lucene, qu'un nom d'aliment ne contient jamais. */
+const LUCENE_OPERATORS = /[+\-&|!(){}[\]^"~*?:\\/]+/g
+
+/** Retire les diacritiques : « pôulet » et « poulet » deviennent identiques. */
+export function deaccent(s: string): string {
+  return s.normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+}
+
+/**
+ * Nettoie la saisie avant de la confier au parseur Lucene de l'API.
+ *
+ * `q` est interprété comme une requête Lucene : un tiret dans
+ * « saint-nectaire » devient un NOT, et une parenthèse ouverte seule fait
+ * répondre 400. L'utilisateur tape un nom d'aliment, jamais une syntaxe de
+ * requête — on retire donc purement les opérateurs.
+ */
+export function normalizeQuery(raw: string): string {
+  return raw
+    .replace(LUCENE_OPERATORS, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .toLowerCase()
+}
+
+/**
+ * Requête envoyée à l'API. La casse et les élisions sont déjà gérées par
+ * l'analyseur français d'Elasticsearch, côté index comme côté requête.
+ *
+ * Les accents, eux, ne sont pas repliés par cet analyseur : retirer les
+ * accents de la requête casserait « crème », qui est indexé accentué. On
+ * envoie donc les deux formes en alternative quand elles diffèrent, ce qui
+ * rattrape « pôulet » et « creme » sans rien perdre.
+ */
+export function buildQuery(term: string): string {
+  const bare = deaccent(term)
+  if (bare === term) return term
+  return `(${term}) OR (${bare})`
+}
 
 /** Les deux endpoints ne nomment pas la liste pareil : `hits` vs `products`. */
 async function fetchProducts(url: string, signal?: AbortSignal): Promise<OffProduct[]> {
@@ -118,25 +187,7 @@ async function fetchProducts(url: string, signal?: AbortSignal): Promise<OffProd
   return data?.hits ?? data?.products ?? []
 }
 
-export async function searchFoods(query: string, signal?: AbortSignal): Promise<Food[]> {
-  const term = query.trim()
-  if (term.length < 2) return []
-
-  const q = encodeURIComponent(term)
-  const primary = `${SEARCH_ENDPOINT}?q=${q}&page_size=25&fields=${FIELDS}`
-  const legacy =
-    `${LEGACY_ENDPOINT}?search_terms=${q}&search_simple=1&action=process&json=1` +
-    `&page_size=25&fields=${FIELDS}`
-
-  let products: OffProduct[]
-  try {
-    products = await fetchProducts(primary, signal)
-  } catch (err) {
-    if (err instanceof DOMException && err.name === 'AbortError') throw err
-    // L'ancienne API reste utile quand la nouvelle ne connaît pas le terme.
-    products = await fetchProducts(legacy, signal)
-  }
-
+function toFoods(products: OffProduct[]): Food[] {
   const seen = new Set<string>()
   const foods: Food[] = []
   for (const p of products) {
@@ -149,6 +200,56 @@ export async function searchFoods(query: string, signal?: AbortSignal): Promise<
     foods.push(food)
   }
   return foods
+}
+
+/** Résultat d'un endpoint : soit des aliments, soit le motif de l'échec. */
+type Attempt = { foods: Food[]; error: SearchError | null }
+
+async function attempt(url: string, signal?: AbortSignal): Promise<Attempt> {
+  try {
+    return { foods: toFoods(await fetchProducts(url, signal)), error: null }
+  } catch (err) {
+    if (err instanceof DOMException && err.name === 'AbortError') throw err
+    return {
+      foods: [],
+      error:
+        err instanceof SearchError
+          ? err
+          : new SearchError('Recherche injoignable. Vérifie ta connexion.'),
+    }
+  }
+}
+
+/**
+ * Cherche un aliment. Ne lève que si les deux endpoints ont échoué **et**
+ * qu'aucun résultat n'a été obtenu : une API en repli qui répond ne doit
+ * jamais faire clignoter une erreur.
+ */
+export async function searchFoods(query: string, signal?: AbortSignal): Promise<Food[]> {
+  const term = normalizeQuery(query)
+  if (term.length < 2) return []
+
+  const q = encodeURIComponent(buildQuery(term))
+  const primary =
+    `${SEARCH_ENDPOINT}?q=${q}&langs=${LANGS}&page_size=25` +
+    `&boost_phrase=true&fields=${FIELDS}`
+
+  const first = await attempt(primary, signal)
+  if (first.foods.length > 0) return first.foods
+
+  // Repli aussi quand la nouvelle API répond sans rien connaître du terme :
+  // l'ancienne base retrouve encore beaucoup de produits frais.
+  const legacy =
+    `${LEGACY_ENDPOINT}?search_terms=${encodeURIComponent(term)}` +
+    `&search_simple=1&action=process&json=1&page_size=25&fields=${FIELDS}`
+  const second = await attempt(legacy, signal)
+  if (second.foods.length > 0) return second.foods
+
+  // Aucun résultat nulle part : on ne signale une erreur que s'il y en a eu
+  // une. Sans cela, « aucun résultat » se déguisait en panne.
+  if (first.error) throw first.error
+  if (second.error) throw second.error
+  return []
 }
 
 /** Macros d'une quantité donnée, arrondies à l'entier comme le reste de l'app. */
