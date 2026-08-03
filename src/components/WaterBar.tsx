@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { WaterBottle } from './WaterBottle'
 
 /** Verre, bouteille, gourde — les trois contenants du quotidien. */
 const QUICK_ML: [number, string][] = [
@@ -12,8 +13,9 @@ function format(ml: number): string {
 }
 
 /**
- * Barre de progression de l'eau, sous les anneaux : un cinquième anneau
- * surchargerait la grille alors que l'eau se lit très bien en linéaire.
+ * Suivi de l'eau, sous les anneaux : une gourde qui se remplit vaut mieux
+ * qu'un cinquième anneau dans la grille. L'incrément reste fait en base
+ * (`add_water`), cet écran n'en montre que le résultat.
  */
 export function WaterBar({
   ml,
@@ -31,33 +33,50 @@ export function WaterBar({
   onReset: () => Promise<void>
 }) {
   const [busy, setBusy] = useState(false)
-  const pct = target > 0 ? Math.min(1, ml / target) : 0
+  /** Change à chaque ajout pour rejouer l'animation de la gourde. */
+  const [pulse, setPulse] = useState(0)
 
-  const run = async (fn: () => Promise<void>) => {
+  const ratio = target > 0 ? ml / target : 0
+  const pct = Math.round(Math.min(1, Math.max(0, ratio)) * 100)
+  const done = ml >= target && target > 0
+  const left = Math.max(0, target - ml)
+
+  const run = async (fn: () => Promise<void>, pulsing = false) => {
     if (busy) return
     setBusy(true)
     try {
       await fn()
+      if (pulsing) setPulse((p) => p + 1)
     } finally {
       setBusy(false)
     }
   }
 
   return (
-    <div className="card space-y-2.5">
-      <div className="flex items-baseline gap-2">
-        <span className="text-xs font-medium uppercase tracking-wide text-ink/45">Eau</span>
-        <span className="flex-1 text-right font-mono text-sm tabular-nums">
-          {format(ml)}
-          <span className="text-ink/35"> / {format(target)}</span>
-        </span>
-      </div>
+    <div className="card space-y-3">
+      <div className="flex items-center gap-4">
+        {/* `key` relance l'animation à chaque ajout : sans lui, la classe est
+            déjà posée et le navigateur ne rejoue rien. */}
+        <div key={pulse} className={pulse > 0 ? 'water-pulse' : undefined}>
+          <WaterBottle ratio={ratio} />
+        </div>
 
-      <div className="h-2 overflow-hidden rounded-full bg-ink/[0.07]">
-        <div
-          className="h-full rounded-full bg-carbs transition-[width] duration-300"
-          style={{ width: `${pct * 100}%` }}
-        />
+        <div className="min-w-0 flex-1">
+          <div className="text-xs font-medium uppercase tracking-wide text-ink/45">Eau</div>
+          <div className="mt-0.5 font-mono text-2xl font-semibold leading-none tabular-nums">
+            {format(ml)}
+          </div>
+          <div className="mt-1 font-mono text-[11px] tabular-nums text-ink/40">
+            objectif {format(target)} · {pct} %
+          </div>
+          <div className="mt-1.5 text-[11px] leading-snug">
+            {done ? (
+              <span className="text-protein">Objectif atteint 💧</span>
+            ) : (
+              <span className="text-ink/45">{format(left)} restants</span>
+            )}
+          </div>
+        </div>
       </div>
 
       <div className="flex gap-1.5">
@@ -65,12 +84,12 @@ export function WaterBar({
           <button
             key={delta}
             type="button"
-            className="tap flex flex-1 flex-col items-center justify-center rounded-xl bg-ink/5 px-1 font-medium disabled:opacity-40"
-            onClick={() => void run(() => onAdd(delta))}
+            className="tap flex flex-1 flex-col items-center justify-center rounded-xl bg-carbs/10 px-1 font-medium text-ink transition-colors active:bg-carbs/25 disabled:opacity-40"
+            onClick={() => void run(() => onAdd(delta), true)}
             disabled={busy}
           >
             <span className="font-mono text-sm tabular-nums">+{delta}</span>
-            <span className="text-[10px] font-normal text-ink/40">{label}</span>
+            <span className="text-[10px] font-normal text-ink/45">{label}</span>
           </button>
         ))}
       </div>

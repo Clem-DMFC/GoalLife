@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { AddSheet } from './AddSheet'
 import { DayNav } from './DayNav'
+import { MacroSplit } from './MacroSplit'
 import { MealSections } from './MealSections'
 import { RepeatYesterday } from './RepeatYesterday'
 import { RingsPanel } from './RingsPanel'
@@ -97,6 +98,8 @@ export function TodayScreen({
         <DayNav day={day} onChange={onDayChange} />
 
         <RingsPanel totals={totals} targets={targets} />
+
+        <MacroSplit totals={totals} />
 
         <WaterBar
           ml={water.ml}
