@@ -17,15 +17,19 @@ export function TodayScreen({
   day,
   onDayChange,
   targets,
+  addOpen,
+  onAddOpenChange,
 }: {
   userId: string
   day: string
   onDayChange: (day: string) => void
   targets: TargetValues
+  /** Pilotée par la barre de navigation, qui porte le bouton d'ajout. */
+  addOpen: boolean
+  onAddOpenChange: (open: boolean) => void
 }) {
   const { entries, totals, loading, error, add, copy, remove } = useFoodEntries(userId, day)
   const water = useWater(userId, day)
-  const [addOpen, setAddOpen] = useState(false)
   const [dataKey, setDataKey] = useState(0)
   const { recents } = useRecents(userId, dataKey)
   const { favorites, add: addFavorite, remove: removeFavorite } = useFavorites(userId)
@@ -88,33 +92,13 @@ export function TodayScreen({
         {(error ?? water.error) && (
           <p className="px-1 text-sm text-danger">{error ?? water.error}</p>
         )}
-
-        {/* Espace réservé sous la liste pour que le bouton flottant ne masque pas
-            la dernière entrée en fin de scroll. */}
-        <div className="h-14" aria-hidden="true" />
-      </div>
-
-      <div
-        className="pointer-events-none fixed inset-x-0 z-40"
-        style={{ bottom: 'calc(env(safe-area-inset-bottom) + 1.25rem)' }}
-      >
-        <div className="mx-auto flex max-w-md justify-end px-4">
-          <button
-            type="button"
-            className="tap pointer-events-auto flex h-14 w-14 items-center justify-center rounded-full bg-accent text-3xl font-medium text-[#0E1300] shadow-lg"
-            onClick={() => setAddOpen(true)}
-            aria-label="Ajouter un aliment"
-          >
-            +
-          </button>
-        </div>
       </div>
 
       {addOpen && (
         <AddSheet
           favorites={favorites}
           recents={recents}
-          onClose={() => setAddOpen(false)}
+          onClose={() => onAddOpenChange(false)}
           onAdd={addEntry}
           onSaveFavorite={addFavorite}
           onRemoveFavorite={removeFavorite}

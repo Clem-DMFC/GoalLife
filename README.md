@@ -10,6 +10,10 @@ utilisée au pouce.
 
 ## Fonctionnalités
 
+**Navigation** — barre d'onglets en bas de l'écran (Jour, Historique, Poids, Réglages) avec
+le bouton d'ajout au centre : tout est atteignable au pouce, sans remonter en haut de
+l'écran. Les objectifs et la déconnexion sont sur l'écran Réglages.
+
 **Écran « Aujourd'hui »**
 
 - 4 anneaux de progression : calories, protéines, glucides, lipides (total du jour vs objectif).
@@ -66,8 +70,9 @@ npm run preview  # sert dist/ en local pour vérifier
 
 2. **Créer les tables** : ouvrir _SQL Editor_ → _New query_, coller le contenu de
    [`supabase/migrations/0001_init.sql`](supabase/migrations/0001_init.sql), puis _Run_.
-   Recommencer dans l'ordre avec [`0002_favorites.sql`](supabase/migrations/0002_favorites.sql)
-   et [`0003_meals_water.sql`](supabase/migrations/0003_meals_water.sql).
+   Recommencer dans l'ordre avec [`0002_favorites.sql`](supabase/migrations/0002_favorites.sql),
+   [`0003_meals_water.sql`](supabase/migrations/0003_meals_water.sql) et
+   [`0004_water_increment.sql`](supabase/migrations/0004_water_increment.sql).
    Les scripts créent les 5 tables (`targets`, `food_entries`, `weights`, `favorites`,
    `water`), activent RLS et posent les policies : chaque ligne n'est lisible et modifiable
    que par son propriétaire (`user_id = auth.uid()`).
