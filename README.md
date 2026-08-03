@@ -17,6 +17,9 @@ l'écran. Les objectifs et la déconnexion sont sur l'écran Réglages.
 **Écran « Aujourd'hui »**
 
 - 4 anneaux de progression : calories, protéines, glucides, lipides (total du jour vs objectif).
+- **Camembert des macros** : la répartition protéines / glucides / lipides, en parts
+  calculées sur les calories (facteurs d'Atwater) et non sur les grammes, avec les grammes
+  et le pourcentage de chacune en légende.
 - Objectifs éditables (stockés dans `targets`).
 - **Recherche d'aliments** dans Open Food Facts : tu tapes un nom, tu choisis la quantité en
   grammes, les macros sont calculées. Gratuit, sans clé d'API.
@@ -28,8 +31,11 @@ l'écran. Les objectifs et la déconnexion sont sur l'écran Réglages.
 - **Entrées groupées par repas** (petit-déj, déjeuner, dîner, collation) avec sous-total
   kcal + protéines par repas et suppression en un tap. Le repas est pré-sélectionné selon
   l'heure à l'ajout ; les entrées antérieures à cette fonctionnalité tombent dans « Autre ».
-- **Suivi de l'eau** : barre de progression sous les anneaux, ajouts rapides
-  +250 / +500 / +750 ml, annulation du dernier ajout ou remise à zéro du jour.
+- **Suivi de l'eau** : une gourde qui se remplit sous les anneaux, ajouts rapides
+  +250 / +500 / +750 ml, annulation du dernier ajout ou remise à zéro du jour. L'incrément
+  est fait par la fonction SQL `add_water`, pas dans le navigateur.
+- **Confirmation à l'ajout** : chaque ajout, copie ou suppression affiche un message court
+  (« Skyr ajouté au petit-déj »), et un échec d'écriture le dit au lieu de passer inaperçu.
 - **Duplication** : copier un repas, refaire un repas de la veille, ou dupliquer une
   journée entière depuis l'historique (alimentaire seul — ni eau ni poids).
 - Navigation entre les jours (flèches ‹ ›), pour consulter ou compléter un jour passé.
@@ -60,6 +66,12 @@ Build de production :
 ```bash
 npm run build    # sort dans dist/
 npm run preview  # sert dist/ en local pour vérifier
+```
+
+Tests (Vitest + jsdom) :
+
+```bash
+npm test         # logique de recherche, répartition des macros, verrou de scroll, feuilles
 ```
 
 ---
@@ -166,8 +178,9 @@ Configuration_ → _Site URL_.
 src/
   components/    écrans et UI (Auth, TodayScreen, WeightScreen, Ring, …)
   hooks/         accès aux données (useSession, useTargets, useFoodEntries, useWeights,
-                 useFavorites, useRecents, useHistory)
-  lib/           client Supabase, types, helpers de date, presets, Open Food Facts
+                 useFavorites, useRecents, useHistory, useWater)
+  lib/           client Supabase, types, helpers de date, presets, Open Food Facts,
+                 répartition des macros
 public/          manifest, service worker, icônes
 supabase/        migrations SQL à coller dans le SQL Editor
 ```
@@ -182,6 +195,22 @@ Deux limites à connaître : les produits sans calories renseignées sont filtr�
 produits frais non emballés (viande au détail, légumes en vrac) y sont mal couverts. Pour
 ceux-là, la saisie manuelle reste le bon outil — et une fois saisis, ils remontent dans
 l'onglet Récents.
+
+Trois détails qui conditionnent la qualité des résultats :
+
+- Le paramètre `q` de l'API est interprété comme une **requête Lucene**. La saisie est donc
+  débarrassée des opérateurs (`-`, `(`, `!`, `:`…) avant l'appel : sans ça le tiret de
+  « saint-nectaire » vaut un NOT, et une parenthèse seule fait répondre 400.
+- `langs=fr,en` est transmis explicitement — sans lui l'API ne cherche que dans les
+  sous-champs anglais.
+- La casse et les élisions sont déjà gérées par l'analyseur français d'Elasticsearch, des
+  deux côtés. Les accents, eux, ne sont pas repliés : la requête part donc sous ses deux
+  formes (`(crème) OR (creme)`) quand elles diffèrent, ce qui rattrape « pôulet » sans
+  casser « crème », qui est indexé accentué.
+
+L'ancienne API (`cgi/search.pl`) sert de repli, aussi bien sur panne que sur réponse vide.
+Une erreur n'est affichée que si les deux endpoints ont échoué **et** qu'aucun résultat
+n'a été obtenu.
 
 Les dates sont manipulées en jour local (`YYYY-MM-DD`, voir `src/lib/date.ts`) et jamais en
 UTC : sinon une saisie tardive le soir bascule sur le lendemain.
