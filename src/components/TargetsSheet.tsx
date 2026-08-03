@@ -1,12 +1,13 @@
 import { useEffect, useState } from 'react'
 import { useLockBodyScroll } from '../hooks/useLockBodyScroll'
-import type { MacroTotals } from '../lib/types'
+import type { TargetValues } from '../lib/types'
 
-const FIELDS: { key: keyof MacroTotals; label: string; unit: string }[] = [
+const FIELDS: { key: keyof TargetValues; label: string; unit: string }[] = [
   { key: 'kcal', label: 'Calories', unit: 'kcal' },
   { key: 'protein', label: 'Protéines', unit: 'g' },
   { key: 'carbs', label: 'Glucides', unit: 'g' },
   { key: 'fat', label: 'Lipides', unit: 'g' },
+  { key: 'water_ml', label: 'Eau', unit: 'ml' },
 ]
 
 /** Feuille modale d'édition des objectifs. */
@@ -15,15 +16,16 @@ export function TargetsSheet({
   onClose,
   onSave,
 }: {
-  targets: MacroTotals
+  targets: TargetValues
   onClose: () => void
-  onSave: (next: MacroTotals) => Promise<void>
+  onSave: (next: TargetValues) => Promise<void>
 }) {
-  const [form, setForm] = useState<Record<keyof MacroTotals, string>>({
+  const [form, setForm] = useState<Record<keyof TargetValues, string>>({
     kcal: String(targets.kcal),
     protein: String(targets.protein),
     carbs: String(targets.carbs),
     fat: String(targets.fat),
+    water_ml: String(targets.water_ml),
   })
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -46,6 +48,7 @@ export function TargetsSheet({
         protein: Math.max(0, Math.round(Number(form.protein) || 0)),
         carbs: Math.max(0, Math.round(Number(form.carbs) || 0)),
         fat: Math.max(0, Math.round(Number(form.fat) || 0)),
+        water_ml: Math.max(0, Math.round(Number(form.water_ml) || 0)),
       })
       onClose()
     } catch (err) {

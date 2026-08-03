@@ -1,9 +1,11 @@
 import { useState } from 'react'
 import { FoodSearchSheet } from './FoodSearchSheet'
+import { MealPicker } from './MealPicker'
 import { QuickAdd } from './QuickAdd'
 import { useLockBodyScroll } from '../hooks/useLockBodyScroll'
 import type { NewEntry } from '../hooks/useFoodEntries'
 import type { NewFavorite } from '../hooks/useFavorites'
+import { mealForTime } from '../lib/meals'
 import type { Favorite } from '../lib/types'
 import type { Recent } from '../hooks/useRecents'
 
@@ -28,11 +30,24 @@ export function AddSheet({
   onRemoveFavorite: (id: string) => Promise<void>
 }) {
   const [searching, setSearching] = useState(false)
+  // Le repas est choisi une fois pour toute la feuille : peu importe le mode
+  // d'ajout (recherche, preset, favori, récent, manuel), l'entrée est taguée.
+  const [meal, setMeal] = useState(mealForTime())
 
   useLockBodyScroll()
 
+  const addWithMeal = (entry: NewEntry) => onAdd({ ...entry, meal_type: meal })
+
   if (searching) {
-    return <FoodSearchSheet onClose={onClose} onAdd={onAdd} onSaveFavorite={onSaveFavorite} />
+    return (
+      <FoodSearchSheet
+        meal={meal}
+        onMealChange={setMeal}
+        onClose={onClose}
+        onAdd={addWithMeal}
+        onSaveFavorite={onSaveFavorite}
+      />
+    )
   }
 
   return (
@@ -50,6 +65,8 @@ export function AddSheet({
       </header>
 
       <div className="flex-1 space-y-3 overflow-y-auto px-4 pb-6">
+        <MealPicker value={meal} onChange={setMeal} />
+
         <button
           type="button"
           className="btn-primary w-full py-3"
@@ -61,7 +78,7 @@ export function AddSheet({
         <QuickAdd
           favorites={favorites}
           recents={recents}
-          onAdd={onAdd}
+          onAdd={addWithMeal}
           onSaveFavorite={onSaveFavorite}
           onRemoveFavorite={onRemoveFavorite}
         />

@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState } from 'react'
 import { scaleToGrams, searchFoods, SearchError, type Food } from '../lib/openfoodfacts'
-import { EMPTY_TOTALS, type MacroTotals, type RecipeItem } from '../lib/types'
+import { EMPTY_TOTALS, type MacroTotals, type MealType, type RecipeItem } from '../lib/types'
 import type { NewEntry } from '../hooks/useFoodEntries'
 import type { NewFavorite } from '../hooks/useFavorites'
 import { useLockBodyScroll } from '../hooks/useLockBodyScroll'
 import { MacroLine } from './MacroLine'
+import { MealPicker } from './MealPicker'
 
 const QUICK_GRAMS = [30, 50, 100, 150, 200, 250]
 
@@ -25,10 +26,14 @@ function sumItems(items: RecipeItem[]): MacroTotals {
  * à partir de plusieurs aliments.
  */
 export function FoodSearchSheet({
+  meal,
+  onMealChange,
   onClose,
   onAdd,
   onSaveFavorite,
 }: {
+  meal: MealType
+  onMealChange: (meal: MealType) => void
   onClose: () => void
   onAdd: (entry: NewEntry) => Promise<void>
   onSaveFavorite: (fav: NewFavorite) => Promise<void>
@@ -167,6 +172,7 @@ export function FoodSearchSheet({
           </ul>
 
           <div className="card space-y-3">
+            <MealPicker value={meal} onChange={onMealChange} />
             <div>
               <label className="label" htmlFor="dish-name">
                 Nom du plat
@@ -205,7 +211,8 @@ export function FoodSearchSheet({
         </div>
       ) : (
         <>
-          <div className="px-4 pb-2">
+          <div className="space-y-2 px-4 pb-2">
+            <MealPicker value={meal} onChange={onMealChange} />
             <input
               ref={inputRef}
               className="field font-sans"

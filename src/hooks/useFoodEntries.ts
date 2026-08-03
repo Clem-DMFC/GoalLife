@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
-import { EMPTY_TOTALS, type FoodEntry, type MacroTotals } from '../lib/types'
+import { copyEntriesTo } from '../lib/entries'
+import { EMPTY_TOTALS, type FoodEntry, type MacroTotals, type MealType } from '../lib/types'
 
 export function sumEntries(entries: FoodEntry[]): MacroTotals {
   return entries.reduce<MacroTotals>(
@@ -14,7 +15,7 @@ export function sumEntries(entries: FoodEntry[]): MacroTotals {
   )
 }
 
-export type NewEntry = { name: string } & MacroTotals
+export type NewEntry = { name: string; meal_type?: MealType | null } & MacroTotals
 
 /** Entrées alimentaires d'un jour donné. */
 export function useFoodEntries(userId: string | undefined, day: string) {
@@ -60,6 +61,25 @@ export function useFoodEntries(userId: string | undefined, day: string) {
     [userId, day]
   )
 
+  /**
+   * Recopie des entrées existantes sur un jour cible (par défaut le jour
+   * affiché) : sert à « copier un repas » et « refaire celui d'hier ».
+   */
+  const copy = useCallback(
+    async (source: FoodEntry[], targetDay: string = day) => {
+      if (!userId || source.length === 0) return
+      try {
+        const created = await copyEntriesTo(userId, targetDay, source)
+        if (targetDay === day) setEntries((prev) => [...prev, ...created])
+        setError(null)
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Échec de la copie')
+        throw err
+      }
+    },
+    [userId, day]
+  )
+
   const remove = useCallback(async (id: string) => {
     const { error } = await supabase.from('food_entries').delete().eq('id', id)
     if (error) {
@@ -70,5 +90,5 @@ export function useFoodEntries(userId: string | undefined, day: string) {
     setError(null)
   }, [])
 
-  return { entries, totals: sumEntries(entries), loading, error, add, remove, reload }
+  return { entries, totals: sumEntries(entries), loading, error, add, copy, remove, reload }
 }

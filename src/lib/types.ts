@@ -1,11 +1,15 @@
 export type Macro = 'kcal' | 'protein' | 'carbs' | 'fat'
 
+/** Repas auquel une entrée est rattachée. `null` = entrée non classée. */
+export type MealType = 'petit_dej' | 'dejeuner' | 'diner' | 'collation'
+
 export type Targets = {
   user_id: string
   kcal: number
   protein: number
   carbs: number
   fat: number
+  water_ml: number
   updated_at: string | null
 }
 
@@ -18,7 +22,15 @@ export type FoodEntry = {
   protein: number
   carbs: number
   fat: number
+  meal_type: MealType | null
   created_at: string
+}
+
+/** Total d'eau bu sur un jour — une ligne par (user, jour). */
+export type Water = {
+  user_id: string
+  day: string
+  ml: number
 }
 
 export type Weight = {
@@ -47,11 +59,15 @@ export type MacroTotals = Record<Macro, number>
 
 export const EMPTY_TOTALS: MacroTotals = { kcal: 0, protein: 0, carbs: 0, fat: 0 }
 
-export const DEFAULT_TARGETS: MacroTotals = {
+/** Objectifs éditables : les 4 macros + l'eau. */
+export type TargetValues = MacroTotals & { water_ml: number }
+
+export const DEFAULT_TARGETS: TargetValues = {
   kcal: 2800,
   protein: 140,
   carbs: 390,
   fat: 78,
+  water_ml: 3000,
 }
 
 /** Schéma minimal pour typer le client Supabase. */
@@ -66,9 +82,15 @@ export type Database = {
       }
       food_entries: {
         Row: FoodEntry
-        Insert: Omit<FoodEntry, 'id' | 'user_id' | 'created_at'> &
-          Partial<Pick<FoodEntry, 'id' | 'user_id' | 'created_at'>>
+        Insert: Omit<FoodEntry, 'id' | 'user_id' | 'created_at' | 'meal_type'> &
+          Partial<Pick<FoodEntry, 'id' | 'user_id' | 'created_at' | 'meal_type'>>
         Update: Partial<FoodEntry>
+        Relationships: []
+      }
+      water: {
+        Row: Water
+        Insert: Omit<Water, 'user_id'> & Partial<Pick<Water, 'user_id'>>
+        Update: Partial<Water>
         Relationships: []
       }
       weights: {

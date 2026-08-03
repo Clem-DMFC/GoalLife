@@ -7,11 +7,16 @@ export function HistoryCard({
   target,
   currentDay,
   onPick,
+  onDuplicate,
+  duplicating,
 }: {
   rows: DayTotals[]
   target: number
   currentDay: string
   onPick: (day: string) => void
+  /** Recopie toute la journée sur aujourd'hui (alimentaire seul). */
+  onDuplicate: (day: string) => void
+  duplicating: string | null
 }) {
   if (rows.length === 0) return null
 
@@ -24,10 +29,10 @@ export function HistoryCard({
         {rows.map((r) => {
           const pct = target > 0 ? Math.min(1, r.kcal / target) : 0
           return (
-            <li key={r.day}>
+            <li key={r.day} className="flex items-center">
               <button
                 type="button"
-                className="tap flex w-full items-center gap-3 px-4 py-2.5 text-left disabled:opacity-100"
+                className="tap flex min-w-0 flex-1 items-center gap-3 py-2.5 pl-4 text-left disabled:opacity-100"
                 onClick={() => onPick(r.day)}
               >
                 <span
@@ -47,6 +52,22 @@ export function HistoryCard({
                   {r.kcal} kcal
                 </span>
               </button>
+
+              {/* Dupliquer aujourd'hui sur lui-même n'a pas de sens : action masquée. */}
+              {r.day === currentDay ? (
+                <span className="w-11" aria-hidden="true" />
+              ) : (
+                <button
+                  type="button"
+                  title="Dupliquer vers aujourd’hui"
+                  aria-label={`Dupliquer le ${labelCompact(r.day)} vers aujourd’hui`}
+                  className="tap flex w-11 items-center justify-center rounded-lg text-ink/30 disabled:opacity-30"
+                  onClick={() => onDuplicate(r.day)}
+                  disabled={duplicating !== null}
+                >
+                  {duplicating === r.day ? '…' : '⧉'}
+                </button>
+              )}
             </li>
           )
         })}

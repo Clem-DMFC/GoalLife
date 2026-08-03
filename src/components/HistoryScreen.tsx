@@ -1,6 +1,8 @@
+import { useState } from 'react'
 import { HistoryCard } from './HistoryCard'
 import { useHistory, weeklyAverage } from '../hooks/useHistory'
-import { today } from '../lib/date'
+import { labelCompact, today } from '../lib/date'
+import { duplicateDay } from '../lib/entries'
 
 /** Moyenne hebdo et 14 derniers jours — tap sur un jour pour aller le consulter. */
 export function HistoryScreen({
@@ -12,8 +14,33 @@ export function HistoryScreen({
   targetKcal: number
   onPickDay: (day: string) => void
 }) {
-  const { rows, loading } = useHistory(userId, 14)
+  const { rows, loading, reload } = useHistory(userId, 14)
+  const [duplicating, setDuplicating] = useState<string | null>(null)
+  const [notice, setNotice] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(null)
   const week = weeklyAverage(rows)
+
+  // Duplication alimentaire seule : ni l'eau ni le poids ne sont recopiés.
+  const duplicate = async (day: string) => {
+    setDuplicating(day)
+    setNotice(null)
+    setError(null)
+    try {
+      const count = await duplicateDay(userId, day, today())
+      setNotice(
+        count === 0
+          ? `Rien à copier depuis ${labelCompact(day)}.`
+          : `${count} entrée${count > 1 ? 's' : ''} du ${labelCompact(day)} copiée${
+              count > 1 ? 's' : ''
+            } sur aujourd’hui.`
+      )
+      await reload()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Échec de la duplication')
+    } finally {
+      setDuplicating(null)
+    }
+  }
 
   return (
     <div className="space-y-3">
@@ -28,6 +55,9 @@ export function HistoryScreen({
         </div>
       </div>
 
+      {notice && <p className="px-1 text-sm text-protein">{notice}</p>}
+      {error && <p className="px-1 text-sm text-danger">{error}</p>}
+
       {loading ? (
         <div className="card text-center text-sm text-ink/30">Chargement…</div>
       ) : rows.length === 0 ? (
@@ -35,7 +65,14 @@ export function HistoryScreen({
           Rien à afficher pour l'instant. L'historique se remplit au fil de tes saisies.
         </div>
       ) : (
-        <HistoryCard rows={rows} target={targetKcal} currentDay={today()} onPick={onPickDay} />
+        <HistoryCard
+          rows={rows}
+          target={targetKcal}
+          currentDay={today()}
+          onPick={onPickDay}
+          onDuplicate={(d) => void duplicate(d)}
+          duplicating={duplicating}
+        />
       )}
     </div>
   )
