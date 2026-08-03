@@ -21,7 +21,13 @@ utilisée au pouce.
 - Trois sources d'ajout rapide : **Raccourcis** (6 presets figés), **Favoris** (tes plats),
   **Récents** (tout ce que tu as saisi ces 30 derniers jours).
 - Saisie manuelle : nom + kcal / P / G / L.
-- Liste des entrées du jour, avec suppression.
+- **Entrées groupées par repas** (petit-déj, déjeuner, dîner, collation) avec sous-total
+  kcal + protéines par repas et suppression en un tap. Le repas est pré-sélectionné selon
+  l'heure à l'ajout ; les entrées antérieures à cette fonctionnalité tombent dans « Autre ».
+- **Suivi de l'eau** : barre de progression sous les anneaux, ajouts rapides
+  +250 / +500 / +750 ml, annulation du dernier ajout ou remise à zéro du jour.
+- **Duplication** : copier un repas, refaire un repas de la veille, ou dupliquer une
+  journée entière depuis l'historique (alimentaire seul — ni eau ni poids).
 - Navigation entre les jours (flèches ‹ ›), pour consulter ou compléter un jour passé.
 - Moyenne des calories sur les 7 derniers jours renseignés.
 - Historique des 14 derniers jours — un tap sur une ligne ouvre ce jour-là.
@@ -60,10 +66,14 @@ npm run preview  # sert dist/ en local pour vérifier
 
 2. **Créer les tables** : ouvrir _SQL Editor_ → _New query_, coller le contenu de
    [`supabase/migrations/0001_init.sql`](supabase/migrations/0001_init.sql), puis _Run_.
-   Recommencer avec [`0002_favorites.sql`](supabase/migrations/0002_favorites.sql).
-   Les scripts créent les 4 tables (`targets`, `food_entries`, `weights`, `favorites`),
-   activent RLS et posent les policies : chaque ligne n'est lisible et modifiable que par
-   son propriétaire (`user_id = auth.uid()`).
+   Recommencer dans l'ordre avec [`0002_favorites.sql`](supabase/migrations/0002_favorites.sql)
+   et [`0003_meals_water.sql`](supabase/migrations/0003_meals_water.sql).
+   Les scripts créent les 5 tables (`targets`, `food_entries`, `weights`, `favorites`,
+   `water`), activent RLS et posent les policies : chaque ligne n'est lisible et modifiable
+   que par son propriétaire (`user_id = auth.uid()`).
+
+   Les migrations sont à rejouer **avant** de déployer le front correspondant : le build
+   qui suit interroge les nouvelles colonnes.
 
 3. **Récupérer les clés** : _Project Settings_ → _API_. Reporter dans `.env` :
 
