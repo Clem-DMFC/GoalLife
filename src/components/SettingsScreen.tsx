@@ -1,10 +1,12 @@
 import { useState } from 'react'
 import { IdentityCard } from './IdentityCard'
+import { InstallTutorial } from './InstallTutorial'
 import { ProfileSheet } from './ProfileSheet'
 import { PushSettings } from './PushSettings'
 import { TargetsSheet } from './TargetsSheet'
 import { supabase } from '../lib/supabase'
 import { ACTIVITY_LABELS, GOAL_LABELS, type Profile } from '../lib/nutrition'
+import { isStandalone } from '../lib/pwaInstall'
 import type { Identity, TargetValues } from '../lib/types'
 
 const ROWS: { key: keyof TargetValues; label: string; unit: string }[] = [
@@ -41,6 +43,7 @@ export function SettingsScreen({
 }) {
   const [editing, setEditing] = useState(false)
   const [editingProfile, setEditingProfile] = useState(false)
+  const [installing, setInstalling] = useState(false)
 
   return (
     <>
@@ -111,6 +114,21 @@ export function SettingsScreen({
 
         <PushSettings />
 
+        {!isStandalone() && (
+          <section className="space-y-2">
+            <h2 className="px-1 text-xs font-medium uppercase tracking-wide text-ink/40">
+              Application
+            </h2>
+            <button
+              type="button"
+              className="btn-ghost w-full py-3"
+              onClick={() => setInstalling(true)}
+            >
+              Installer l'app
+            </button>
+          </section>
+        )}
+
         <section className="space-y-2">
           <h2 className="px-1 text-xs font-medium uppercase tracking-wide text-ink/40">Compte</h2>
           <div className="card">
@@ -139,6 +157,8 @@ export function SettingsScreen({
           onSave={onSaveProfile}
         />
       )}
+
+      {installing && <InstallTutorial onClose={() => setInstalling(false)} />}
     </>
   )
 }

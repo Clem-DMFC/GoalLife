@@ -4,7 +4,7 @@ import { ToastProvider } from './components/Toaster'
 import { BottomNav } from './components/BottomNav'
 import { ConfigError } from './components/ConfigError'
 import { HistoryScreen } from './components/HistoryScreen'
-import { IosInstallBanner } from './components/IosInstallBanner'
+import { InstallTutorial } from './components/InstallTutorial'
 import { Onboarding } from './components/Onboarding'
 import { Logo } from './components/Logo'
 import { SettingsScreen } from './components/SettingsScreen'
@@ -16,7 +16,10 @@ import { useTargets } from './hooks/useTargets'
 import { missingEnv } from './lib/supabase'
 import { today } from './lib/date'
 import { clearDeepLink, readDeepLink } from './lib/deeplink'
+import { getPlatform, isStandalone } from './lib/pwaInstall'
 import { TAB_TITLES, type Tab } from './lib/tabs'
+
+const INSTALL_SEEN_KEY = 'goallife.installTutorialSeen'
 
 export default function App() {
   const { session, loading } = useSession()
@@ -49,6 +52,12 @@ export default function App() {
   // s'ouvrir depuis n'importe quel onglet, en ramenant sur l'écran du jour.
   const [addOpen, setAddOpen] = useState(link?.openAdd === true)
 
+  // Proposé avant l'inscription, jamais à qui l'a déjà installée ou vue une
+  // fois : forcer le tuto à chaque ouverture du navigateur découragerait.
+  const [installTutorialSeen, setInstallTutorialSeen] = useState(
+    () => localStorage.getItem(INSTALL_SEEN_KEY) === '1',
+  )
+
   if (missingEnv.length > 0) return <ConfigError missing={missingEnv} />
 
   if (loading) {
@@ -56,6 +65,17 @@ export default function App() {
       <div className="flex min-h-[100dvh] items-center justify-center text-sm text-ink/30">
         …
       </div>
+    )
+  }
+
+  if (!session && !installTutorialSeen && !isStandalone() && getPlatform() !== 'other') {
+    return (
+      <InstallTutorial
+        onContinue={() => {
+          localStorage.setItem(INSTALL_SEEN_KEY, '1')
+          setInstallTutorialSeen(true)
+        }}
+      />
     )
   }
 
@@ -105,7 +125,6 @@ export default function App() {
         {/* pb-28 : la barre de navigation est fixe et inclut la safe area de la
           barre home ; le contenu doit défiler jusqu'au bout sans finir dessous. */}
         <main className="flex-1 space-y-3 px-4 pb-28 pt-1">
-          <IosInstallBanner />
           {tab === 'today' && (
             <TodayScreen
               userId={userId}
