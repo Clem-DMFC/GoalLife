@@ -1,11 +1,15 @@
 import { useState } from 'react'
 import { EntryList } from './EntryList'
-import { groupByMeal } from '../lib/meals'
+import { groupByMeal, mealForTime } from '../lib/meals'
 import type { FoodEntry } from '../lib/types'
 
 /**
- * Les entrées du jour, regroupées par repas. Un bloc par repas renseigné —
- * les repas vides ne s'affichent pas, la journée reste courte à lire.
+ * Les entrées du jour, un bloc par repas, replié sur son sous-total.
+ *
+ * La liste complète occupait 545 px en permanence, pour une information qu'on
+ * ne relit pas à chaque ouverture. Seul le repas de l'heure courante se
+ * déplie tout seul : c'est celui qu'on vient de remplir, donc celui qu'on
+ * vérifie. Les repas vides ne s'affichent toujours pas.
  */
 export function MealSections({
   entries,
@@ -19,12 +23,27 @@ export function MealSections({
   /** Ce que fait le bouton copier, selon le jour affiché. */
   copyLabel: string
 }) {
+  /*
+   * Initialiseur de `useState` : le repas suggéré par l'heure est calculé une
+   * fois, au montage. Le recalculer à chaque rendu rouvrirait un bloc que
+   * l'utilisateur vient de replier.
+   */
+  const [open, setOpen] = useState<Set<string>>(() => new Set<string>([mealForTime()]))
   const [busy, setBusy] = useState<string | null>(null)
+
   const groups = groupByMeal(entries)
 
   if (groups.length === 0) {
     return <div className="card text-center text-sm text-ink/40">Aucune entrée pour ce jour.</div>
   }
+
+  const toggle = (key: string) =>
+    setOpen((prev) => {
+      const next = new Set(prev)
+      if (next.has(key)) next.delete(key)
+      else next.add(key)
+      return next
+    })
 
   const copy = async (key: string, of: FoodEntry[]) => {
     setBusy(key)
@@ -36,31 +55,59 @@ export function MealSections({
   }
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-1.5">
       {groups.map((g) => {
         const key = g.meal ?? 'other'
+        const isOpen = open.has(key)
         return (
-          <section key={key} className="space-y-1.5">
-            <div className="flex items-center gap-2 px-1">
-              <h3 className="text-xs font-medium uppercase tracking-wide text-ink/45">
-                {g.label}
-              </h3>
-              <span className="flex-1 font-mono text-[11px] tabular-nums text-ink/40">
-                {g.totals.kcal} kcal
-                <span className="text-protein"> · {g.totals.protein}P</span>
-              </span>
+          <section key={key} className="overflow-hidden rounded-2xl bg-surface shadow-sm">
+            <div className="flex items-center">
               <button
                 type="button"
-                title={`${copyLabel} — ${g.label}`}
-                aria-label={`${copyLabel} — ${g.label}`}
-                className="tap flex h-8 min-h-0 w-8 items-center justify-center rounded-lg text-ink/30 disabled:opacity-30"
-                onClick={() => void copy(key, g.entries)}
-                disabled={busy === key}
+                aria-expanded={isOpen}
+                onClick={() => toggle(key)}
+                className="flex min-h-[44px] flex-1 select-none items-center gap-2 px-4 text-left"
+                style={{ WebkitTapHighlightColor: 'transparent' }}
               >
-                ⧉
+                <span className="text-[11px] font-semibold uppercase tracking-wide text-ink/55">
+                  {g.label}
+                </span>
+                <span className="flex-1 font-mono text-[11px] tabular-nums text-ink/45">
+                  {g.totals.kcal} kcal
+                  <span className="text-protein"> · {g.totals.protein}P</span>
+                </span>
+                <span
+                  aria-hidden
+                  className={`text-[9px] text-ink/30 transition-transform duration-200 ${
+                    isOpen ? 'rotate-90' : ''
+                  }`}
+                >
+                  ▶
+                </span>
               </button>
+
+              {/* La copie n'apparaît qu'une fois le repas ouvert : sur une
+                  ligne repliée, elle rivaliserait avec la cible de tap. */}
+              {isOpen && (
+                <button
+                  type="button"
+                  title={`${copyLabel} — ${g.label}`}
+                  aria-label={`${copyLabel} — ${g.label}`}
+                  className="flex h-11 w-10 shrink-0 select-none items-center justify-center text-ink/30 disabled:opacity-30"
+                  style={{ WebkitTapHighlightColor: 'transparent' }}
+                  onClick={() => void copy(key, g.entries)}
+                  disabled={busy === key}
+                >
+                  ⧉
+                </button>
+              )}
             </div>
-            <EntryList entries={g.entries} onRemove={onRemove} />
+
+            {isOpen && (
+              <div className="border-t border-ink/5">
+                <EntryList entries={g.entries} onRemove={onRemove} />
+              </div>
+            )}
           </section>
         )
       })}

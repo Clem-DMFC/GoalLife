@@ -1,6 +1,11 @@
 import { useState } from 'react'
 import type { FoodEntry } from '../lib/types'
 
+/**
+ * Les aliments d'un repas. Sans habillage propre : le bloc de repas qui
+ * l'accueille porte déjà la carte, en superposer une seconde créerait un
+ * cadre dans un cadre.
+ */
 export function EntryList({
   entries,
   onRemove,
@@ -10,11 +15,7 @@ export function EntryList({
 }) {
   const [busy, setBusy] = useState<string | null>(null)
 
-  if (entries.length === 0) {
-    return (
-      <div className="card text-center text-sm text-ink/40">Aucune entrée pour ce jour.</div>
-    )
-  }
+  if (entries.length === 0) return null
 
   const remove = async (id: string) => {
     setBusy(id)
@@ -26,7 +27,7 @@ export function EntryList({
   }
 
   return (
-    <ul className="card divide-y divide-ink/5 p-0">
+    <ul className="divide-y divide-ink/5">
       {entries.map((e) => (
         <li key={e.id} className="flex items-center gap-2 px-4 py-2.5">
           <div className="min-w-0 flex-1">

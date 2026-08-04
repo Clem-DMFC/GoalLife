@@ -20,10 +20,9 @@ l'écran. Les objectifs et la déconnexion sont sur l'écran Réglages.
   (sexe, âge, taille, poids, activité, objectif) et en déduit les besoins — Mifflin-St Jeor,
   facteur d'activité, puis écart selon l'objectif. Modifiables ensuite depuis Réglages →
   Mon profil, avec confirmation avant d'écraser des objectifs ajustés à la main.
-- 4 anneaux de progression : calories, protéines, glucides, lipides (total du jour vs objectif).
-- **Camembert des macros** : la répartition protéines / glucides / lipides, en parts
-  calculées sur les calories (facteurs d'Atwater) et non sur les grammes, avec les grammes
-  et le pourcentage de chacune en légende.
+- **Résumé hiérarchisé** : un grand anneau pour les calories restantes — l'information
+  qu'on vient chercher — puis les protéines en barre accentuée, glucides et lipides en
+  retrait. Un écran de suivi n'a qu'un seul premier plan.
 - Objectifs éditables (stockés dans `targets`).
 - **Recherche d'aliments** dans Open Food Facts : tu tapes un nom, tu choisis la quantité en
   grammes, les macros sont calculées. Gratuit, sans clé d'API.
@@ -32,12 +31,15 @@ l'écran. Les objectifs et la déconnexion sont sur l'écran Réglages.
 - Trois sources d'ajout rapide : **Raccourcis** (6 presets figés), **Favoris** (tes plats),
   **Récents** (tout ce que tu as saisi ces 30 derniers jours).
 - Saisie manuelle : nom + kcal / P / G / L.
-- **Entrées groupées par repas** (petit-déj, déjeuner, dîner, collation) avec sous-total
-  kcal + protéines par repas et suppression en un tap. Le repas est pré-sélectionné selon
-  l'heure à l'ajout ; les entrées antérieures à cette fonctionnalité tombent dans « Autre ».
-- **Suivi de l'eau** : une gourde qui se remplit sous les anneaux, ajouts rapides
-  +250 / +500 / +750 ml, annulation du dernier ajout ou remise à zéro du jour. L'incrément
-  est fait par la fonction SQL `add_water`, pas dans le navigateur.
+- **Entrées groupées par repas** (petit-déj, déjeuner, dîner, collation), chaque repas
+  replié sur son sous-total kcal + protéines et déplié au tap. Seul le repas de l'heure
+  courante s'ouvre tout seul : c'est celui qu'on vient de remplir. Le repas est
+  pré-sélectionné selon l'heure à l'ajout ; les entrées antérieures à cette
+  fonctionnalité tombent dans « Autre ».
+- **Suivi de l'eau** : deux lignes sous le résumé — total, objectif, barre et pourcentage,
+  avec les ajouts +250 / +500 / +750 ml sur la même ligne. Les corrections (annuler le
+  dernier, remettre à zéro) sont derrière un menu : on les cherche une fois par semaine.
+  L'incrément est fait par la fonction SQL `add_water`, pas dans le navigateur.
 - **Confirmation à l'ajout** : chaque ajout, copie ou suppression affiche un message court
   (« Skyr ajouté au petit-déj »), et un échec d'écriture le dit au lieu de passer inaperçu.
 - **Rappels planifiés** : notifications push à heures fixes (pesée, repas, hydratation),
@@ -186,7 +188,7 @@ Configuration_ → _Site URL_.
 
 ```
 src/
-  components/    écrans et UI (Auth, TodayScreen, WeightScreen, Ring, …)
+  components/    écrans et UI (Auth, TodayScreen, DaySummary, WeightScreen, …)
   hooks/         accès aux données (useSession, useTargets, useFoodEntries, useWeights,
                  useFavorites, useRecents, useHistory, useWater, useProfile)
   lib/           client Supabase, types, helpers de date, presets, Open Food Facts,

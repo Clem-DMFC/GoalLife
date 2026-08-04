@@ -1,10 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
 import { AddSheet } from './AddSheet'
 import { DayNav } from './DayNav'
-import { MacroSplit } from './MacroSplit'
 import { MealSections } from './MealSections'
 import { RepeatYesterday } from './RepeatYesterday'
-import { RingsPanel } from './RingsPanel'
+import { DaySummary } from './DaySummary'
 import { WaterBar } from './WaterBar'
 import { useToast } from './Toaster'
 import { useFoodEntries, type NewEntry } from '../hooks/useFoodEntries'
@@ -53,8 +52,8 @@ export function TodayScreen({
   const toast = useToast()
   const waterRef = useRef<HTMLDivElement>(null)
 
-  // Rappel d'hydratation : la carte de l'eau est sous les anneaux et le
-  // camembert, donc hors écran à l'ouverture. On l'amène sous les yeux.
+  // Rappel d'hydratation : le bloc de l'eau reste sous le résumé du jour.
+  // Il tient désormais dans l'écran, mais un défilement doux le désigne.
   useEffect(() => {
     if (!focusWater) return
     waterRef.current?.scrollIntoView({ block: 'center', behavior: 'smooth' })
@@ -111,9 +110,7 @@ export function TodayScreen({
       <div className="space-y-3">
         <DayNav day={day} onChange={onDayChange} />
 
-        <RingsPanel totals={totals} targets={targets} />
-
-        <MacroSplit totals={totals} />
+        <DaySummary totals={totals} targets={targets} />
 
         <div ref={waterRef}>
           <WaterBar
@@ -126,10 +123,7 @@ export function TodayScreen({
           />
         </div>
 
-        <section className="space-y-2">
-          <h2 className="px-1 text-xs font-medium uppercase tracking-wide text-ink/40">
-            Entrées du jour
-          </h2>
+        <section className="space-y-1.5">
           {loading ? (
             <div className="card text-center text-sm text-ink/30">Chargement…</div>
           ) : (
