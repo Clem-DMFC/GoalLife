@@ -16,6 +16,10 @@ l'écran. Les objectifs et la déconnexion sont sur l'écran Réglages.
 
 **Écran « Aujourd'hui »**
 
+- **Objectifs personnalisés** : à la première connexion, un onboarding demande le profil
+  (sexe, âge, taille, poids, activité, objectif) et en déduit les besoins — Mifflin-St Jeor,
+  facteur d'activité, puis écart selon l'objectif. Modifiables ensuite depuis Réglages →
+  Mon profil, avec confirmation avant d'écraser des objectifs ajustés à la main.
 - 4 anneaux de progression : calories, protéines, glucides, lipides (total du jour vs objectif).
 - **Camembert des macros** : la répartition protéines / glucides / lipides, en parts
   calculées sur les calories (facteurs d'Atwater) et non sur les grammes, avec les grammes
@@ -75,7 +79,7 @@ npm run preview  # sert dist/ en local pour vérifier
 Tests (Vitest + jsdom) :
 
 ```bash
-npm test         # logique de recherche, répartition des macros, verrou de scroll, feuilles
+npm test         # calcul des objectifs, recherche, planning des rappels, écrans
 ```
 
 ---
@@ -86,12 +90,14 @@ npm test         # logique de recherche, répartition des macros, verrou de scro
 
 2. **Créer les tables** : ouvrir _SQL Editor_ → _New query_, coller le contenu de
    [`supabase/migrations/0001_init.sql`](supabase/migrations/0001_init.sql), puis _Run_.
-   Recommencer dans l'ordre avec [`0002_favorites.sql`](supabase/migrations/0002_favorites.sql),
-   [`0003_meals_water.sql`](supabase/migrations/0003_meals_water.sql) et
-   [`0004_water_increment.sql`](supabase/migrations/0004_water_increment.sql).
-   Les scripts créent les 5 tables (`targets`, `food_entries`, `weights`, `favorites`,
-   `water`), activent RLS et posent les policies : chaque ligne n'est lisible et modifiable
-   que par son propriétaire (`user_id = auth.uid()`).
+   Recommencer **dans l'ordre** avec [`0002_favorites.sql`](supabase/migrations/0002_favorites.sql),
+   [`0003_meals_water.sql`](supabase/migrations/0003_meals_water.sql),
+   [`0004_water_increment.sql`](supabase/migrations/0004_water_increment.sql),
+   [`0005_push_subscriptions.sql`](supabase/migrations/0005_push_subscriptions.sql) et
+   [`0006_profile.sql`](supabase/migrations/0006_profile.sql).
+   Les scripts créent les tables (`targets`, `food_entries`, `weights`, `favorites`, `water`,
+   `push_subscriptions`, `reminder_log`, `profile`), activent RLS et posent les policies :
+   chaque ligne n'est lisible et modifiable que par son propriétaire (`user_id = auth.uid()`).
 
    Les migrations sont à rejouer **avant** de déployer le front correspondant : le build
    qui suit interroge les nouvelles colonnes.
@@ -182,7 +188,7 @@ Configuration_ → _Site URL_.
 src/
   components/    écrans et UI (Auth, TodayScreen, WeightScreen, Ring, …)
   hooks/         accès aux données (useSession, useTargets, useFoodEntries, useWeights,
-                 useFavorites, useRecents, useHistory, useWater)
+                 useFavorites, useRecents, useHistory, useWater, useProfile)
   lib/           client Supabase, types, helpers de date, presets, Open Food Facts,
                  répartition des macros
 public/          manifest, service worker (cache + Web Push), icônes
@@ -190,6 +196,28 @@ supabase/
   migrations/    SQL à coller dans le SQL Editor
   functions/     Edge Functions Deno (send-reminders : notifications planifiées)
 ```
+
+## Calcul des objectifs
+
+`src/lib/nutrition.ts` porte la formule, en fonction pure et testée :
+
+- **Métabolisme de base** — Mifflin-St Jeor : `10×poids + 6.25×taille − 5×âge`, `+5` chez
+  l'homme, `−161` chez la femme.
+- **Dépense estimée** — le métabolisme de base × le facteur d'activité (1.2 à 1.9).
+- **Calories** — dépense −18 % en perte, +12 % en prise de muscle, à l'entretien en maintien
+  comme en recomposition. Arrondi à la dizaine.
+- **Macros** — protéines à 1.9 g/kg et lipides à 0.9 g/kg, fixés au poids de corps ; les
+  glucides prennent le reste des calories. C'est cet ordre qui protège la masse maigre en
+  déficit.
+
+Deux garde-fous : un **plancher calorique** (1500 kcal homme, 1200 femme) qu'un petit gabarit
+sédentaire en perte franchirait par le calcul seul, et des **glucides jamais négatifs** — chez
+un gabarit très lourd et sédentaire en déficit, protéines et lipides suffisent à dépasser le
+total, et les anneaux afficheraient un objectif absurde.
+
+Ces valeurs sont une moyenne statistique, pas une mesure : l'app les présente comme un point
+de départ à ajuster selon ce que dit la balance, et le calcul ne s'impose jamais aux objectifs
+saisis à la main.
 
 ## Notifications planifiées
 

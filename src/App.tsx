@@ -5,10 +5,12 @@ import { BottomNav } from './components/BottomNav'
 import { ConfigError } from './components/ConfigError'
 import { HistoryScreen } from './components/HistoryScreen'
 import { IosInstallBanner } from './components/IosInstallBanner'
+import { Onboarding } from './components/Onboarding'
 import { Logo } from './components/Logo'
 import { SettingsScreen } from './components/SettingsScreen'
 import { TodayScreen } from './components/TodayScreen'
 import { WeightScreen } from './components/WeightScreen'
+import { useProfile } from './hooks/useProfile'
 import { useSession } from './hooks/useSession'
 import { useTargets } from './hooks/useTargets'
 import { missingEnv } from './lib/supabase'
@@ -20,6 +22,7 @@ export default function App() {
   const { session, loading } = useSession()
   const userId = session?.user.id
   const { targets, save: saveTargets } = useTargets(userId)
+  const { profile, loading: profileLoading, onboardingDone, save: saveProfile } = useProfile(userId)
 
   /*
    * Deep link d'une notification (`/?go=add&meal=diner`). Lu une seule fois,
@@ -50,6 +53,31 @@ export default function App() {
   }
 
   if (!session || !userId) return <Auth />
+
+  // On attend de savoir si le profil existe avant de peindre l'app : sans
+  // cela l'écran du jour apparaîtrait une fraction de seconde sous
+  // l'onboarding, à chaque lancement.
+  if (profileLoading) {
+    return (
+      <div className="flex min-h-[100dvh] items-center justify-center text-sm text-ink/30">…</div>
+    )
+  }
+
+  if (!onboardingDone) {
+    return (
+      <ToastProvider>
+        <Onboarding
+          onDone={async (next, computed) => {
+            // Les objectifs d'abord : si leur écriture échoue, l'onboarding
+            // reste ouvert et le message s'affiche, plutôt que d'aboutir sur
+            // un compte marqué configuré mais sans objectifs.
+            await saveTargets(computed)
+            await saveProfile(next)
+          }}
+        />
+      </ToastProvider>
+    )
+  }
 
   return (
     <ToastProvider>
@@ -91,7 +119,16 @@ export default function App() {
           )}
           {tab === 'weight' && <WeightScreen userId={userId} />}
           {tab === 'settings' && (
-            <SettingsScreen email={session.user.email} targets={targets} onSave={saveTargets} />
+            <SettingsScreen
+              email={session.user.email}
+              targets={targets}
+              onSave={saveTargets}
+              profile={profile}
+              onSaveProfile={async (next, nextTargets) => {
+                if (nextTargets) await saveTargets(nextTargets)
+                await saveProfile(next)
+              }}
+            />
           )}
         </main>
 

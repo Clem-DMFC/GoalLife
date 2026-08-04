@@ -1,3 +1,5 @@
+import type { Activity, Goal, Sex } from './nutrition'
+
 export type Macro = 'kcal' | 'protein' | 'carbs' | 'fat'
 
 /** Repas auquel une entrée est rattachée. `null` = entrée non classée. */
@@ -24,6 +26,20 @@ export type FoodEntry = {
   fat: number
   meal_type: MealType | null
   created_at: string
+}
+
+/** Profil servant au calcul des objectifs. Une ligne par utilisateur. */
+export type ProfileRow = {
+  user_id: string
+  sex: Sex
+  age: number
+  height_cm: number
+  weight_kg: number
+  activity: Activity
+  goal: Goal
+  onboarding_done: boolean
+  created_at: string
+  updated_at: string
 }
 
 /** Abonnement Web Push d'un appareil — une ligne par navigateur installé. */
@@ -114,6 +130,13 @@ export type Database = {
         Insert: Omit<Favorite, 'id' | 'user_id' | 'created_at'> &
           Partial<Pick<Favorite, 'id' | 'user_id' | 'created_at'>>
         Update: Partial<Favorite>
+        Relationships: []
+      }
+      profile: {
+        Row: ProfileRow
+        Insert: Omit<ProfileRow, 'user_id' | 'created_at' | 'updated_at'> &
+          Partial<Pick<ProfileRow, 'user_id' | 'created_at' | 'updated_at'>>
+        Update: Partial<ProfileRow>
         Relationships: []
       }
       push_subscriptions: {
