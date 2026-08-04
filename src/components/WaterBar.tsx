@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState } from 'react'
+import { useState } from 'react'
+import { WaterBottle } from './WaterBottle'
 
 /** Verre, bouteille, gourde — les trois contenants du quotidien. */
 const QUICK_ML: [number, string][] = [
@@ -12,12 +13,9 @@ function format(ml: number): string {
 }
 
 /**
- * Suivi de l'eau, en trois lignes compactes.
- *
- * La gourde animée occupait un quart de l'écran pour une information qui tient
- * dans une barre. Les corrections — annuler, remettre à zéro — passent derrière
- * un menu : on les cherche une fois par semaine, elles n'ont pas à peser autant
- * que les boutons d'ajout.
+ * Suivi de l'eau, sous les anneaux : une gourde qui se remplit vaut mieux
+ * qu'un cinquième anneau dans la grille. L'incrément reste fait en base
+ * (`add_water`), cet écran n'en montre que le résultat.
  */
 export function WaterBar({
   ml,
@@ -35,114 +33,84 @@ export function WaterBar({
   onReset: () => Promise<void>
 }) {
   const [busy, setBusy] = useState(false)
-  const [menuOpen, setMenuOpen] = useState(false)
-  const menuRef = useRef<HTMLDivElement>(null)
+  /** Change à chaque ajout pour rejouer l'animation de la gourde. */
+  const [pulse, setPulse] = useState(0)
 
   const ratio = target > 0 ? ml / target : 0
   const pct = Math.round(Math.min(1, Math.max(0, ratio)) * 100)
-  const done = target > 0 && ml >= target
+  const done = ml >= target && target > 0
+  const left = Math.max(0, target - ml)
 
-  // Un tap hors du menu le referme : sur mobile il n'y a pas d'échappement.
-  useEffect(() => {
-    if (!menuOpen) return
-    const onDown = (e: PointerEvent) => {
-      if (!menuRef.current?.contains(e.target as Node)) setMenuOpen(false)
-    }
-    document.addEventListener('pointerdown', onDown)
-    return () => document.removeEventListener('pointerdown', onDown)
-  }, [menuOpen])
-
-  const run = async (fn: () => Promise<void>) => {
+  const run = async (fn: () => Promise<void>, pulsing = false) => {
     if (busy) return
     setBusy(true)
-    setMenuOpen(false)
     try {
       await fn()
+      if (pulsing) setPulse((p) => p + 1)
     } finally {
       setBusy(false)
     }
   }
 
   return (
-    <div className="card space-y-1.5 px-3 py-2.5">
-      {/* Total et boutons sur la même ligne : c'est ce qui fait tenir tout le
-          bloc en deux lignes, sans rogner les cibles de tap. */}
-      <div className="flex items-center gap-2">
-        <span aria-hidden className="text-[13px]">
-          💧
-        </span>
-        <span className="shrink-0 font-mono text-[13px] font-medium tabular-nums">
-          {format(ml)}
-          <span className="text-ink/35"> / {format(target)}</span>
-        </span>
-        <span className="flex-1" />
+    <div className="card space-y-3">
+      <div className="flex items-center gap-4">
+        {/* `key` relance l'animation à chaque ajout : sans lui, la classe est
+            déjà posée et le navigateur ne rejoue rien. */}
+        <div key={pulse} className={pulse > 0 ? 'water-pulse' : undefined}>
+          <WaterBottle ratio={ratio} />
+        </div>
 
+        <div className="min-w-0 flex-1">
+          <div className="text-xs font-medium uppercase tracking-wide text-ink/45">Eau</div>
+          <div className="mt-0.5 tabular-nums text-2xl font-semibold leading-none">
+            {format(ml)}
+          </div>
+          <div className="mt-1 tabular-nums text-[11px] text-ink/40">
+            objectif {format(target)} · {pct} %
+          </div>
+          <div className="mt-1.5 text-[11px] leading-snug">
+            {done ? (
+              <span className="text-protein">Objectif atteint 💧</span>
+            ) : (
+              <span className="text-ink/45">{format(left)} restants</span>
+            )}
+          </div>
+        </div>
+      </div>
+
+      <div className="flex gap-1.5">
         {QUICK_ML.map(([delta, label]) => (
           <button
             key={delta}
             type="button"
-            title={label}
-            aria-label={`Ajouter ${delta} millilitres (${label})`}
-            className="flex h-9 w-[52px] shrink-0 select-none items-center justify-center rounded-lg bg-carbs/10 font-mono text-[12px] font-medium tabular-nums transition-colors active:bg-carbs/25 disabled:opacity-40"
-            style={{ WebkitTapHighlightColor: 'transparent' }}
-            onClick={() => void run(() => onAdd(delta))}
+            className="tap flex flex-1 flex-col items-center justify-center rounded-xl bg-carbs/10 px-1 font-medium text-ink transition-colors active:bg-carbs/25 disabled:opacity-40"
+            onClick={() => void run(() => onAdd(delta), true)}
             disabled={busy}
           >
-            +{delta}
+            <span className="tabular-nums text-sm">+{delta}</span>
+            <span className="text-[10px] font-normal text-ink/45">{label}</span>
           </button>
         ))}
-
-        <div className="relative" ref={menuRef}>
-          <button
-            type="button"
-            aria-label="Corriger"
-            aria-expanded={menuOpen}
-            className="flex h-9 w-9 select-none items-center justify-center rounded-lg text-ink/35 disabled:opacity-40"
-            style={{ WebkitTapHighlightColor: 'transparent' }}
-            onClick={() => setMenuOpen((o) => !o)}
-            disabled={busy || (ml === 0 && !canUndo)}
-          >
-            ⋯
-          </button>
-
-          {menuOpen && (
-            <div className="absolute bottom-full right-0 z-20 mb-1 w-44 overflow-hidden rounded-xl bg-surface py-1 shadow-lg ring-1 ring-ink/10">
-              <button
-                type="button"
-                className="block w-full px-3 py-2 text-left text-[12px] disabled:opacity-40"
-                onClick={() => void run(onUndo)}
-                disabled={!canUndo}
-              >
-                Annuler le dernier
-              </button>
-              <button
-                type="button"
-                className="block w-full px-3 py-2 text-left text-[12px] text-danger disabled:opacity-40"
-                onClick={() => void run(onReset)}
-                disabled={ml === 0}
-              >
-                Remettre à zéro
-              </button>
-            </div>
-          )}
-        </div>
       </div>
 
-      {/* Barre et pourcentage sur la seconde ligne, à hauteur de texte. */}
-      <div className="flex items-center gap-2">
-        <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-ink/[0.07]">
-          <div
-            className="h-full rounded-full bg-carbs transition-[width] duration-300"
-            style={{ width: `${pct}%` }}
-          />
-        </div>
-        <span
-          className={`w-10 shrink-0 text-right font-mono text-[11px] tabular-nums ${
-            done ? 'text-protein' : 'text-ink/40'
-          }`}
+      <div className="flex justify-end gap-3 text-[11px] text-ink/40">
+        <button
+          type="button"
+          className="underline underline-offset-2 disabled:no-underline disabled:opacity-40"
+          onClick={() => void run(onUndo)}
+          disabled={busy || !canUndo}
         >
-          {pct} %
-        </span>
+          Annuler le dernier
+        </button>
+        <button
+          type="button"
+          className="underline underline-offset-2 disabled:no-underline disabled:opacity-40"
+          onClick={() => void run(onReset)}
+          disabled={busy || ml === 0}
+        >
+          Remettre à zéro
+        </button>
       </div>
     </div>
   )

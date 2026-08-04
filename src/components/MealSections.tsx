@@ -72,7 +72,7 @@ export function MealSections({
                 <span className="text-[11px] font-semibold uppercase tracking-wide text-ink/55">
                   {g.label}
                 </span>
-                <span className="flex-1 font-mono text-[11px] tabular-nums text-ink/45">
+                <span className="flex-1 tabular-nums text-[11px] text-ink/45">
                   {g.totals.kcal} kcal
                   <span className="text-protein"> · {g.totals.protein}P</span>
                 </span>

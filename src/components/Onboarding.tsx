@@ -144,7 +144,7 @@ export function Onboarding({
           autoFocus
           aria-label={title}
         />
-        <span className="font-mono text-sm text-ink/45">{RANGES[key].label}</span>
+        <span className="tabular-nums text-sm text-ink/45">{RANGES[key].label}</span>
       </div>
       {!valid(key) && num[key].trim() !== '' && (
         <p className="mt-2 text-[12px] text-danger">
@@ -160,7 +160,7 @@ export function Onboarding({
         <Logo size={20} className="text-protein" />
         <span className="text-sm font-semibold">Goatly</span>
         <span className="flex-1" />
-        <span className="font-mono text-[11px] tabular-nums text-ink/35">
+        <span className="tabular-nums text-[11px] text-ink/35">
           {index + 1} / {STEPS.length}
         </span>
       </header>
@@ -251,7 +251,7 @@ export function Onboarding({
 
             <div className="card mt-5">
               <div className="flex items-baseline gap-2">
-                <span className="font-mono text-3xl font-semibold tabular-nums">
+                <span className="tabular-nums text-3xl font-semibold">
                   {computed.kcal}
                 </span>
                 <span className="text-sm text-ink/45">kcal / jour</span>
@@ -271,11 +271,11 @@ export function Onboarding({
             <ul className="card mt-3 divide-y divide-ink/5 p-0">
               <li className="flex items-center px-4 py-2.5 text-sm">
                 <span className="flex-1 text-ink/60">Métabolisme de base</span>
-                <span className="font-mono tabular-nums">{computed.bmr} kcal</span>
+                <span className="tabular-nums">{computed.bmr} kcal</span>
               </li>
               <li className="flex items-center px-4 py-2.5 text-sm">
                 <span className="flex-1 text-ink/60">Dépense estimée</span>
-                <span className="font-mono tabular-nums">{computed.tdee} kcal</span>
+                <span className="tabular-nums">{computed.tdee} kcal</span>
               </li>
               <li className="flex items-center px-4 py-2.5 text-sm">
                 <span className="flex-1 text-ink/60">Objectif</span>

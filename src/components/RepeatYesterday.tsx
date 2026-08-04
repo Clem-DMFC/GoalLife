@@ -67,7 +67,7 @@ export function RepeatYesterday({
             disabled={busy !== null}
           >
             <span className="font-medium">{MEAL_LABELS[g.meal!]}</span>
-            <span className="font-mono tabular-nums text-ink/45">{g.totals.kcal} kcal</span>
+            <span className="tabular-nums text-ink/45">{g.totals.kcal} kcal</span>
           </button>
         ))}
       </div>

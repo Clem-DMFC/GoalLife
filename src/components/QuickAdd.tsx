@@ -37,7 +37,7 @@ function Tile({
       >
         <span className="w-full truncate text-sm font-semibold leading-tight">{name}</span>
         {hint && <span className="truncate text-[10px] leading-tight text-ink/40">{hint}</span>}
-        <span className="mt-1 w-full truncate font-mono text-[10px] tabular-nums text-ink/50">
+        <span className="mt-1 w-full truncate tabular-nums text-[10px] text-ink/50">
           {totals.kcal} kcal
           <span className="text-protein"> {totals.protein}P</span>
           <span className="text-carbs"> {totals.carbs}G</span>

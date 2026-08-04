@@ -144,7 +144,7 @@ export function ProfileSheet({
                 onChange={(e) => setNum((f) => ({ ...f, [k]: e.target.value }))}
                 inputMode={k === 'weight_kg' ? 'decimal' : 'numeric'}
               />
-              <div className="mt-1 text-center font-mono text-[10px] text-ink/35">
+              <div className="mt-1 text-center tabular-nums text-[10px] text-ink/35">
                 {RANGES[k].unit}
               </div>
             </div>
@@ -217,7 +217,7 @@ export function ProfileSheet({
               Objectifs recalculés
             </div>
             <div className="mt-1 flex items-baseline gap-2">
-              <span className="font-mono text-2xl font-semibold tabular-nums">
+              <span className="tabular-nums text-2xl font-semibold">
                 {computed.kcal}
               </span>
               <span className="text-sm text-ink/45">kcal</span>

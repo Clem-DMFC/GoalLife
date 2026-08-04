@@ -55,7 +55,7 @@ function Ring({ value, target }: { value: number; target: number }) {
         </svg>
         <div className="absolute inset-0 flex flex-col items-center justify-center">
           <span
-            className={`font-mono text-[27px] font-semibold leading-none tabular-nums ${
+            className={`tabular-nums text-[27px] font-semibold leading-none ${
               over ? 'text-danger' : ''
             }`}
           >
@@ -66,7 +66,7 @@ function Ring({ value, target }: { value: number; target: number }) {
           </span>
         </div>
       </div>
-      <div className="mt-1.5 font-mono text-[11px] tabular-nums text-ink/40">
+      <div className="mt-1.5 tabular-nums text-[11px] text-ink/40">
         {Math.round(value)} / {target} kcal
       </div>
     </div>
@@ -101,7 +101,7 @@ function Bar({
         </span>
         <span className="flex-1" />
         <span
-          className={`font-mono tabular-nums ${
+          className={`tabular-nums ${
             strong ? 'text-[12px] font-semibold' : 'text-[11px] text-ink/70'
           }`}
         >
@@ -118,7 +118,7 @@ function Bar({
         />
       </div>
       {/* Le reste à couvrir, en retrait : utile, jamais au premier plan. */}
-      <div className="mt-0.5 text-right font-mono text-[10px] tabular-nums text-ink/35">
+      <div className="mt-0.5 text-right tabular-nums text-[10px] text-ink/35">
         {left > 0 ? `${left} g restants` : `+${Math.abs(left)} g`}
       </div>
     </div>

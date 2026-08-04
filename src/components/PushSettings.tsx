@@ -74,7 +74,7 @@ export function PushSettings() {
             <ul className="divide-y divide-ink/5 border-t border-ink/5 pt-1">
               {REMINDER_TIMES.map((r) => (
                 <li key={r.at + r.label} className="flex items-center gap-3 py-1.5">
-                  <span className="font-mono text-[12px] tabular-nums text-ink/45">{r.at}</span>
+                  <span className="tabular-nums text-[12px] text-ink/45">{r.at}</span>
                   <span className="flex-1 text-[12px]">{r.label}</span>
                 </li>
               ))}

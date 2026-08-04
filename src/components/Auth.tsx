@@ -64,7 +64,7 @@ export function Auth() {
               </label>
               <input
                 id="auth-email"
-                className="field font-sans"
+                className="field"
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}

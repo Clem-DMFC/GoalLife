@@ -46,7 +46,7 @@ export function SettingsScreen({
             {ROWS.map((r) => (
               <li key={r.key} className="flex items-center gap-3 px-4 py-2.5">
                 <span className="flex-1 text-sm">{r.label}</span>
-                <span className="font-mono text-sm tabular-nums">
+                <span className="tabular-nums text-sm">
                   {targets[r.key]}
                   <span className="ml-1 text-ink/35">{r.unit}</span>
                 </span>
@@ -66,7 +66,7 @@ export function SettingsScreen({
             <ul className="card divide-y divide-ink/5 p-0">
               <li className="flex items-center gap-3 px-4 py-2.5">
                 <span className="flex-1 text-sm">Gabarit</span>
-                <span className="font-mono text-sm tabular-nums">
+                <span className="tabular-nums text-sm">
                   {profile.age} ans · {profile.height_cm} cm · {profile.weight_kg} kg
                 </span>
               </li>

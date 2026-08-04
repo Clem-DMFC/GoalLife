@@ -5,6 +5,11 @@
 /*
  * Polices variables Geist, hébergées localement (public/fonts) — pas d'appel
  * réseau à un CDN de polices, pas de FOUT au premier chargement offline.
+ *
+ * Les chiffres de l'app sont en Geist tout court, avec `tabular-nums` pour
+ * garder les colonnes alignées : le monospace donnait à chaque total un air
+ * de sortie de terminal. Geist Mono ne sert plus qu'à l'écran de
+ * configuration, où l'on cite de vrais noms de variables et de commandes.
  */
 @font-face {
   font-family: 'Geist';
@@ -159,8 +164,10 @@
     @apply tap rounded-xl bg-ink/5 px-4 font-medium text-ink disabled:opacity-40;
   }
 
+  /* `tabular-nums` sans monospace : les chiffres saisis restent alignés,
+     dans la police du reste de l'app. */
   .field {
-    @apply w-full rounded-xl border border-ink/10 bg-surface px-3 py-3 font-mono
+    @apply w-full rounded-xl border border-ink/10 bg-surface px-3 py-3 tabular-nums
            text-ink outline-none focus:border-accent focus:ring-2 focus:ring-accent/25;
   }
 

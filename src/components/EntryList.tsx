@@ -32,7 +32,7 @@ export function EntryList({
         <li key={e.id} className="flex items-center gap-2 px-4 py-2.5">
           <div className="min-w-0 flex-1">
             <div className="truncate text-sm font-medium">{e.name}</div>
-            <div className="font-mono text-[11px] tabular-nums text-ink/50">
+            <div className="tabular-nums text-[11px] text-ink/50">
               {e.kcal} kcal
               <span className="text-protein"> · {e.protein}P</span>
               <span className="text-carbs"> {e.carbs}G</span>

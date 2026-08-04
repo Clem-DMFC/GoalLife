@@ -36,10 +36,9 @@ l'écran. Les objectifs et la déconnexion sont sur l'écran Réglages.
   courante s'ouvre tout seul : c'est celui qu'on vient de remplir. Le repas est
   pré-sélectionné selon l'heure à l'ajout ; les entrées antérieures à cette
   fonctionnalité tombent dans « Autre ».
-- **Suivi de l'eau** : deux lignes sous le résumé — total, objectif, barre et pourcentage,
-  avec les ajouts +250 / +500 / +750 ml sur la même ligne. Les corrections (annuler le
-  dernier, remettre à zéro) sont derrière un menu : on les cherche une fois par semaine.
-  L'incrément est fait par la fonction SQL `add_water`, pas dans le navigateur.
+- **Suivi de l'eau** : une bouteille qui se remplit, ajouts rapides +250 / +500 / +750 ml,
+  annulation du dernier ajout ou remise à zéro du jour. L'incrément est fait par la
+  fonction SQL `add_water`, pas dans le navigateur.
 - **Confirmation à l'ajout** : chaque ajout, copie ou suppression affiche un message court
   (« Skyr ajouté au petit-déj »), et un échec d'écriture le dit au lieu de passer inaperçu.
 - **Rappels planifiés** : notifications push à heures fixes (pesée, repas, hydratation),
@@ -156,6 +155,10 @@ _Authentication_ → _Emails_ → _Magic Link_ et y insérer `{{ .Token }}`.
 - `viewport-fit=cover` + classes `.safe-top` / `.safe-bottom` / `.safe-x` basées sur
   `env(safe-area-inset-*)` pour l'encoche et la barre du bas.
 - Les inputs sont en 16px : en dessous, iOS zoome automatiquement au focus.
+- Les chiffres sont en Geist (la police du texte) avec `tabular-nums`, pas en Geist Mono :
+  la chasse fixe garde les colonnes alignées sans donner à chaque total un air de sortie
+  de terminal. Geist Mono ne sert plus qu'à l'écran de configuration, qui cite de vrais
+  noms de variables et de commandes.
 - Une bannière d'aide à l'installation s'affiche **uniquement sur Safari iOS non installé**
   (`src/components/IosInstallBanner.tsx`), et se masque définitivement une fois fermée.
 

@@ -48,7 +48,7 @@ export function HistoryCard({
                     style={{ width: `${pct * 100}%` }}
                   />
                 </span>
-                <span className="w-20 shrink-0 text-right font-mono text-[11px] tabular-nums text-ink/50">
+                <span className="w-20 shrink-0 text-right tabular-nums text-[11px] text-ink/50">
                   {r.kcal} kcal
                 </span>
               </button>

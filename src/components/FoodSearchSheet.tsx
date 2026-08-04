@@ -167,7 +167,7 @@ export function FoodSearchSheet({
               <li key={`${item.name}-${i}`} className="flex items-center gap-2 px-4 py-2.5">
                 <div className="min-w-0 flex-1">
                   <div className="truncate text-sm font-medium">{item.name}</div>
-                  <div className="font-mono text-[11px] text-ink/50">
+                  <div className="tabular-nums text-[11px] text-ink/50">
                     {item.grams} g · {item.kcal} kcal
                   </div>
                 </div>
@@ -191,7 +191,7 @@ export function FoodSearchSheet({
               </label>
               <input
                 id="dish-name"
-                className="field font-sans"
+                className="field"
                 value={dishName}
                 onChange={(e) => setDishName(e.target.value)}
                 placeholder="Ex. Poulet riz brocolis"
@@ -227,7 +227,7 @@ export function FoodSearchSheet({
             <MealPicker value={meal} onChange={onMealChange} />
             <input
               ref={inputRef}
-              className="field font-sans"
+              className="field"
               value={query}
               onChange={(e) => {
                 setQuery(e.target.value)
@@ -247,7 +247,7 @@ export function FoodSearchSheet({
                   {selected.brand && (
                     <div className="text-[11px] text-ink/40">{selected.brand}</div>
                   )}
-                  <div className="mt-1 font-mono text-[11px] text-ink/45">
+                  <div className="mt-1 tabular-nums text-[11px] text-ink/45">
                     {Math.round(selected.per100.kcal)} kcal / 100 g
                   </div>
                 </div>
@@ -270,7 +270,7 @@ export function FoodSearchSheet({
                   {selected.servingGrams && (
                     <button
                       type="button"
-                      className="tap rounded-lg bg-accent/15 px-3 py-1.5 font-mono text-xs text-protein"
+                      className="tap rounded-lg bg-accent/15 px-3 py-1.5 tabular-nums text-xs text-protein"
                       onClick={() => setGrams(String(Math.round(selected.servingGrams!)))}
                     >
                       1 portion · {Math.round(selected.servingGrams)} g
@@ -280,7 +280,7 @@ export function FoodSearchSheet({
                     <button
                       key={g}
                       type="button"
-                      className="tap rounded-lg bg-ink/5 px-3 py-1.5 font-mono text-xs"
+                      className="tap rounded-lg bg-ink/5 px-3 py-1.5 tabular-nums text-xs"
                       onClick={() => setGrams(String(g))}
                     >
                       {g} g
@@ -345,7 +345,7 @@ export function FoodSearchSheet({
                           {f.brand || 'sans marque'}
                         </div>
                       </div>
-                      <div className="shrink-0 text-right font-mono text-[11px] tabular-nums text-ink/50">
+                      <div className="shrink-0 text-right tabular-nums text-[11px] text-ink/50">
                         {Math.round(f.per100.kcal)} kcal
                         <div className="text-ink/30">/ 100 g</div>
                       </div>
@@ -375,7 +375,7 @@ export function FoodSearchSheet({
           <span className="text-sm font-medium">
             {basket.length} ingrédient{basket.length > 1 ? 's' : ''}
           </span>
-          <span className="font-mono text-sm tabular-nums">{basketTotals.kcal} kcal →</span>
+          <span className="tabular-nums text-sm">{basketTotals.kcal} kcal →</span>
         </button>
       )}
     </div>

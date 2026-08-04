@@ -61,7 +61,7 @@ export function EntryForm({
         </label>
         <input
           id="entry-name"
-          className="field font-sans"
+          className="field"
           value={form.name}
           onChange={set('name')}
           placeholder="Ex. Pâtes bolo"

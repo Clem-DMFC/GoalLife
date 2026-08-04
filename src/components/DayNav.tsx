@@ -27,7 +27,7 @@ export function DayNav({
         disabled={isToday}
       >
         <span className="text-sm font-semibold first-letter:uppercase">{labelDay(day)}</span>
-        <span className="font-mono text-[11px] text-ink/40">{labelShort(day)}</span>
+        <span className="tabular-nums text-[11px] text-ink/40">{labelShort(day)}</span>
       </button>
 
       <button

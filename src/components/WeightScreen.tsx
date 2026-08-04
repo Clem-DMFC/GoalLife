@@ -88,7 +88,7 @@ export function WeightScreen({ userId }: { userId: string }) {
       <div className="grid grid-cols-2 gap-2">
         <div className="card">
           <div className="text-[11px] uppercase tracking-wide text-ink/40">Dernière</div>
-          <div className="mt-1 font-mono text-2xl font-semibold tabular-nums">
+          <div className="mt-1 tabular-nums text-2xl font-semibold">
             {last ? `${last.kg.toFixed(1)}` : '—'}
             <span className="ml-1 text-sm font-normal text-ink/40">kg</span>
           </div>
@@ -100,7 +100,7 @@ export function WeightScreen({ userId }: { userId: string }) {
         <div className="card">
           <div className="text-[11px] uppercase tracking-wide text-ink/40">Sur 7 jours</div>
           <div
-            className="mt-1 font-mono text-2xl font-semibold tabular-nums"
+            className="mt-1 tabular-nums text-2xl font-semibold"
             style={{
               color: trend ? (onTrack ? 'rgb(var(--color-protein))' : undefined) : undefined,
             }}

@@ -44,7 +44,7 @@ export function HistoryScreen({
     <div className="space-y-3">
       <div className="card">
         <div className="text-[11px] uppercase tracking-wide text-ink/40">Moyenne 7 jours</div>
-        <div className="mt-1 font-mono text-2xl font-semibold tabular-nums">
+        <div className="mt-1 tabular-nums text-2xl font-semibold">
           {week.days > 0 ? week.avg : '—'}
           <span className="ml-1 text-sm font-normal text-ink/40">kcal / j</span>
         </div>
