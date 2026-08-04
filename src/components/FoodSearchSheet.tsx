@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
-import { scaleToGrams, searchFoods, SearchError, type Food } from '../lib/openfoodfacts'
+import { scaleToGrams, type Food } from '../lib/openfoodfacts'
 import { EMPTY_TOTALS, type MacroTotals, type MealType, type RecipeItem } from '../lib/types'
 import type { NewEntry } from '../hooks/useFoodEntries'
 import type { NewFavorite } from '../hooks/useFavorites'
+import { useFoodSearch } from '../hooks/useFoodSearch'
 import { useLockBodyScroll } from '../hooks/useLockBodyScroll'
 import { MacroLine } from './MacroLine'
 import { MealPicker } from './MealPicker'
@@ -40,10 +41,7 @@ export function FoodSearchSheet({
   onSaveFavorite: (fav: NewFavorite) => Promise<void>
 }) {
   const [query, setQuery] = useState('')
-  const [results, setResults] = useState<Food[]>([])
-  const [searching, setSearching] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const [touched, setTouched] = useState(false)
+  const { results, searching, error, touched } = useFoodSearch(query)
 
   const [selected, setSelected] = useState<Food | null>(null)
   const [grams, setGrams] = useState('100')
@@ -60,52 +58,6 @@ export function FoodSearchSheet({
   useEffect(() => {
     inputRef.current?.focus()
   }, [])
-
-  // Recherche débouncée : on annule la requête précédente à chaque frappe.
-  useEffect(() => {
-    const term = query.trim()
-    if (term.length < 2) {
-      setResults([])
-      setError(null)
-      setSearching(false)
-      return
-    }
-
-    const controller = new AbortController()
-    setSearching(true)
-    setTouched(true)
-    // L'erreur précédente disparaît dès qu'une nouvelle recherche part :
-    // sinon elle restait affichée au dessus des résultats qui arrivaient.
-    setError(null)
-
-    const timer = setTimeout(() => {
-      searchFoods(term, controller.signal)
-        .then((foods) => {
-          if (controller.signal.aborted) return
-          setResults(foods)
-          setError(null)
-          setSearching(false)
-        })
-        .catch((err: unknown) => {
-          // Une requête annulée appartient à une frappe périmée : elle ne doit
-          // toucher ni aux résultats, ni à l'état de chargement en cours.
-          if (controller.signal.aborted) return
-          setResults([])
-          // Remonter le motif réel : « indisponible » cache trop de causes.
-          setError(
-            err instanceof SearchError
-              ? err.message
-              : 'Recherche injoignable. Vérifie ta connexion, ou saisis les valeurs à la main.'
-          )
-          setSearching(false)
-        })
-    }, 400)
-
-    return () => {
-      controller.abort()
-      clearTimeout(timer)
-    }
-  }, [query])
 
   const gramsValue = Math.max(0, Math.round(Number(grams.replace(',', '.')) || 0))
   const macros = selected ? scaleToGrams(selected.per100, gramsValue) : EMPTY_TOTALS
@@ -126,8 +78,8 @@ export function FoodSearchSheet({
     if (!selected || gramsValue <= 0) return
     setBasket((prev) => [...prev, { name: selected.name, grams: gramsValue, ...macros }])
     setSelected(null)
+    // Vider la requête retombe déjà les résultats à zéro, via le hook.
     setQuery('')
-    setResults([])
     inputRef.current?.focus()
   }
 
@@ -315,11 +267,10 @@ export function FoodSearchSheet({
               <div className="card text-center text-sm text-ink/30">Recherche…</div>
             )}
 
-            {/* L'erreur ne s'affiche qu'à défaut de résultats : une API de
-                repli qui a répondu ne doit pas passer pour une panne. */}
-            {error && results.length === 0 && (
-              <div className="card text-sm text-danger">{error}</div>
-            )}
+            {/* `useFoodSearch` garantit déjà `error === null` dès que
+                `results` n'est pas vide : une API de repli qui a répondu, ou
+                la base locale seule, ne doivent jamais passer pour une panne. */}
+            {error && <div className="card text-sm text-danger">{error}</div>}
 
             {!searching && !error && touched && results.length === 0 && query.trim().length >= 2 && (
               <div className="card text-center text-sm text-ink/40">
@@ -341,8 +292,19 @@ export function FoodSearchSheet({
                     >
                       <div className="min-w-0 flex-1">
                         <div className="truncate text-sm font-medium">{f.name}</div>
-                        <div className="truncate text-[11px] text-ink/40">
-                          {f.brand || 'sans marque'}
+                        <div className="flex items-center gap-1.5">
+                          <span className="truncate text-[11px] text-ink/40">
+                            {f.brand || 'sans marque'}
+                          </span>
+                          <span
+                            className={`shrink-0 rounded px-1 py-px text-[9px] font-semibold uppercase tracking-wide ${
+                              f.source === 'base'
+                                ? 'bg-accent/15 text-protein'
+                                : 'bg-ink/[0.06] text-ink/35'
+                            }`}
+                          >
+                            {f.source === 'base' ? 'Base' : 'OFF'}
+                          </span>
                         </div>
                       </div>
                       <div className="shrink-0 text-right tabular-nums text-[11px] text-ink/50">
@@ -357,9 +319,10 @@ export function FoodSearchSheet({
 
             {!touched && (
               <p className="px-1 text-[12px] leading-snug text-ink/40">
-                Les données viennent d'Open Food Facts, une base collaborative. Les valeurs
-                sont celles de l'emballage : fiables pour les produits industriels, absentes
-                pour beaucoup de produits frais.
+                Les aliments de base (œufs, riz, poulet, légumes…) viennent d'une table
+                nutritionnelle locale, toujours disponible. Le reste vient d'Open Food Facts,
+                une base collaborative : fiable pour les produits industriels, moins pour les
+                produits frais.
               </p>
             )}
           </div>

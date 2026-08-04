@@ -138,3 +138,82 @@ test('une recherche annulée ne se rabat pas sur l’ancienne API', async () => 
   await expect(searchFoods('poulet')).rejects.toBe(abort)
   expect(fetchMock).toHaveBeenCalledTimes(1)
 })
+
+test('chaque résultat OFF porte la source "off"', async () => {
+  vi.stubGlobal('fetch', vi.fn().mockResolvedValue(jsonResponse({ hits: [HIT] })))
+  const foods = await searchFoods('poulet')
+  expect(foods[0].source).toBe('off')
+})
+
+// --- Timeout ------------------------------------------------------------
+//
+// De vrais timers, avec un plafond réduit passé en 3ᵉ argument (réservé aux
+// tests) : simuler ceci avec `vi.useFakeTimers()` déclenche un faux « rejet
+// non intercepté » côté Node quand il se combine à `AbortController` — un
+// artefact de l'outillage, sans rapport avec le code testé. De vrais timers
+// courts évitent le problème et testent un comportement réel.
+
+/** Un fetch qui ne répond jamais, sauf si on l'annule — comme une requête
+ *  qui pend réellement sur un réseau capricieux. */
+function hangingFetch() {
+  return vi.fn((_url: string, init?: RequestInit) => {
+    return new Promise((_resolve, reject) => {
+      init?.signal?.addEventListener('abort', () => {
+        reject(new DOMException('The operation was aborted.', 'AbortError'))
+      })
+    })
+  })
+}
+
+test('une requête qui pend est abandonnée au bout du délai, sans bloquer indéfiniment', async () => {
+  const fetchMock = hangingFetch()
+  vi.stubGlobal('fetch', fetchMock)
+
+  await expect(searchFoods('poulet', undefined, 20)).rejects.toBeInstanceOf(SearchError)
+  await expect(searchFoods('poulet', undefined, 20)).rejects.toThrow(/trop longue/)
+  // Chaque endpoint a son propre plafond : les deux sont bien tentés avant
+  // que l'échec ne remonte.
+  expect(fetchMock).toHaveBeenCalledTimes(4)
+}, 2000)
+
+test('une requête qui répond avant le délai n’est jamais abandonnée', async () => {
+  const fetchMock = vi.fn((_url: string, init?: RequestInit) => {
+    return new Promise((resolve, reject) => {
+      init?.signal?.addEventListener('abort', () =>
+        reject(new DOMException('aborted', 'AbortError'))
+      )
+      setTimeout(() => resolve(jsonResponse({ hits: [HIT] })), 5)
+    })
+  })
+  vi.stubGlobal('fetch', fetchMock)
+
+  await expect(searchFoods('poulet', undefined, 500)).resolves.toHaveLength(1)
+})
+
+// --- Réponse JSON illisible ----------------------------------------------
+
+function unreadableJsonResponse(): Response {
+  return {
+    ok: true,
+    status: 200,
+    headers: { get: () => 'application/json' },
+    json: async () => {
+      throw new SyntaxError('Unexpected end of JSON input')
+    },
+  } as unknown as Response
+}
+
+test('une réponse JSON illisible malgré l’en-tête ne fait pas planter, et bascule sur l’autre endpoint', async () => {
+  const fetchMock = vi
+    .fn()
+    .mockResolvedValueOnce(unreadableJsonResponse())
+    .mockResolvedValueOnce(jsonResponse({ products: [HIT] }))
+  vi.stubGlobal('fetch', fetchMock)
+
+  await expect(searchFoods('poulet')).resolves.toHaveLength(1)
+})
+
+test('si les deux endpoints renvoient du JSON illisible, le motif est clair', async () => {
+  vi.stubGlobal('fetch', vi.fn().mockResolvedValue(unreadableJsonResponse()))
+  await expect(searchFoods('poulet')).rejects.toThrow(/illisible/)
+})

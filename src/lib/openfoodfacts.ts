@@ -27,6 +27,9 @@ const FIELDS =
 /** Sans `langs`, l'API ne cherche que dans les sous-champs anglais. */
 const LANGS = 'fr,en'
 
+/** D'où vient un résultat — affiché en badge à côté de chaque ligne. */
+export type FoodSource = 'base' | 'off'
+
 export type Food = {
   code: string
   name: string
@@ -35,6 +38,7 @@ export type Food = {
   per100: MacroTotals
   /** Poids d'une portion en grammes, quand le produit le renseigne. */
   servingGrams: number | null
+  source: FoodSource
 }
 
 type OffNutriments = Record<string, unknown>
@@ -121,6 +125,7 @@ function toFood(p: OffProduct): Food | null {
       fat: num(n.fat_100g) ?? 0,
     },
     servingGrams: servingGrams(p),
+    source: 'off',
   }
 }
 
@@ -166,9 +171,68 @@ export function buildQuery(term: string): string {
   return `(${term}) OR (${bare})`
 }
 
+/**
+ * Au delà, une requête qui pend n'immobilise plus l'UI : on abandonne et on
+ * replie. Paramétrable en dernier argument de `searchFoods` — réservé aux
+ * tests, pour vérifier le comportement avec de vrais timers courts plutôt
+ * que des timers simulés (`vi.useFakeTimers` combiné à `AbortController`
+ * produit de faux « rejet non intercepté » côté Node, sans rapport avec un
+ * vrai bug).
+ */
+const TIMEOUT_MS = 6000
+
+/**
+ * Combine le signal de l'appelant (annulé à chaque frappe) et un plafond de
+ * temps, sans dépendre d'`AbortSignal.any` — absent avant iOS 17.4, alors que
+ * l'app cible 16.4+ pour le reste.
+ *
+ * Le drapeau `timedOut` distingue les deux origines d'abandon dans le
+ * `catch` de l'appelant : une frappe suivante doit rester silencieuse (le
+ * code existant la relance déjà), un dépassement de temps doit au contraire
+ * remonter comme un vrai échec pour déclencher le repli sur l'autre endpoint.
+ */
+function withTimeout(external: AbortSignal | undefined, ms: number) {
+  const internal = new AbortController()
+  const state = { timedOut: false }
+
+  const forward = () => internal.abort()
+  if (external?.aborted) internal.abort()
+  else external?.addEventListener('abort', forward, { once: true })
+
+  const timer = setTimeout(() => {
+    state.timedOut = true
+    internal.abort()
+  }, ms)
+
+  return {
+    signal: internal.signal,
+    timedOut: state,
+    cancel: () => {
+      clearTimeout(timer)
+      external?.removeEventListener('abort', forward)
+    },
+  }
+}
+
 /** Les deux endpoints ne nomment pas la liste pareil : `hits` vs `products`. */
-async function fetchProducts(url: string, signal?: AbortSignal): Promise<OffProduct[]> {
-  const res = await fetch(url, { signal, headers: { Accept: 'application/json' } })
+async function fetchProducts(
+  url: string,
+  signal?: AbortSignal,
+  timeoutMs: number = TIMEOUT_MS
+): Promise<OffProduct[]> {
+  const { signal: combined, timedOut, cancel } = withTimeout(signal, timeoutMs)
+
+  let res: Response
+  try {
+    res = await fetch(url, { signal: combined, headers: { Accept: 'application/json' } })
+  } catch (err) {
+    if (timedOut.timedOut) {
+      throw new SearchError('Recherche trop longue. Nouvelle tentative sur l’autre source…')
+    }
+    throw err
+  } finally {
+    cancel()
+  }
 
   if (res.status === 429) {
     throw new SearchError('Trop de recherches. Attends une minute et réessaie.')
@@ -183,7 +247,14 @@ async function fetchProducts(url: string, signal?: AbortSignal): Promise<OffProd
     throw new SearchError('Open Food Facts est momentanément indisponible.')
   }
 
-  const data = (await res.json()) as { hits?: OffProduct[]; products?: OffProduct[] } | null
+  // Réponse vide, tronquée ou mal formée malgré l'en-tête JSON : on préfère
+  // un message clair à une erreur de parsing opaque remontée telle quelle.
+  let data: { hits?: OffProduct[]; products?: OffProduct[] } | null
+  try {
+    data = (await res.json()) as typeof data
+  } catch {
+    throw new SearchError('Open Food Facts a renvoyé une réponse illisible.')
+  }
   return data?.hits ?? data?.products ?? []
 }
 
@@ -205,9 +276,13 @@ function toFoods(products: OffProduct[]): Food[] {
 /** Résultat d'un endpoint : soit des aliments, soit le motif de l'échec. */
 type Attempt = { foods: Food[]; error: SearchError | null }
 
-async function attempt(url: string, signal?: AbortSignal): Promise<Attempt> {
+async function attempt(
+  url: string,
+  signal?: AbortSignal,
+  timeoutMs?: number
+): Promise<Attempt> {
   try {
-    return { foods: toFoods(await fetchProducts(url, signal)), error: null }
+    return { foods: toFoods(await fetchProducts(url, signal, timeoutMs)), error: null }
   } catch (err) {
     if (err instanceof DOMException && err.name === 'AbortError') throw err
     return {
@@ -225,7 +300,12 @@ async function attempt(url: string, signal?: AbortSignal): Promise<Attempt> {
  * qu'aucun résultat n'a été obtenu : une API en repli qui répond ne doit
  * jamais faire clignoter une erreur.
  */
-export async function searchFoods(query: string, signal?: AbortSignal): Promise<Food[]> {
+export async function searchFoods(
+  query: string,
+  signal?: AbortSignal,
+  /** Non utilisé par l'app : surcharge de test pour `TIMEOUT_MS`. */
+  timeoutMs?: number
+): Promise<Food[]> {
   const term = normalizeQuery(query)
   if (term.length < 2) return []
 
@@ -234,7 +314,7 @@ export async function searchFoods(query: string, signal?: AbortSignal): Promise<
     `${SEARCH_ENDPOINT}?q=${q}&langs=${LANGS}&page_size=25` +
     `&boost_phrase=true&fields=${FIELDS}`
 
-  const first = await attempt(primary, signal)
+  const first = await attempt(primary, signal, timeoutMs)
   if (first.foods.length > 0) return first.foods
 
   // Repli aussi quand la nouvelle API répond sans rien connaître du terme :
@@ -242,7 +322,7 @@ export async function searchFoods(query: string, signal?: AbortSignal): Promise<
   const legacy =
     `${LEGACY_ENDPOINT}?search_terms=${encodeURIComponent(term)}` +
     `&search_simple=1&action=process&json=1&page_size=25&fields=${FIELDS}`
-  const second = await attempt(legacy, signal)
+  const second = await attempt(legacy, signal, timeoutMs)
   if (second.foods.length > 0) return second.foods
 
   // Aucun résultat nulle part : on ne signale une erreur que s'il y en a eu

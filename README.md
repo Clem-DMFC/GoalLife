@@ -28,8 +28,12 @@ l'écran. Les objectifs et la déconnexion sont sur l'écran Réglages.
   qu'on vient chercher — puis les protéines en barre accentuée, glucides et lipides en
   retrait. Un écran de suivi n'a qu'un seul premier plan.
 - Objectifs éditables (stockés dans `targets`).
-- **Recherche d'aliments** dans Open Food Facts : tu tapes un nom, tu choisis la quantité en
-  grammes, les macros sont calculées. Gratuit, sans clé d'API.
+- **Recherche d'aliments fusionnée** : une base locale d'une soixantaine d'aliments bruts
+  (œufs, viandes, féculents — riz et pâtes en cru **et** cuit, légumineuses, laitiers,
+  fruits, légumes…) répond en mémoire, instantanément, sans réseau ; Open Food Facts
+  complète en parallèle pour tout le reste. Chaque résultat porte un badge `Base` ou `OFF`.
+  Un échec réseau ne s'affiche que si la base locale n'a elle non plus rien trouvé. Tu
+  choisis la quantité en grammes, les macros sont calculées.
 - **Plats composés** : additionner plusieurs aliments en une recette, enregistrée en favori
   et réutilisable en un tap.
 - Trois sources d'ajout rapide : **Raccourcis** (6 presets figés), **Favoris** (tes plats),
@@ -84,7 +88,7 @@ npm run preview  # sert dist/ en local pour vérifier
 Tests (Vitest + jsdom) :
 
 ```bash
-npm test         # calcul des objectifs, recherche, planning des rappels, écrans
+npm test         # calcul des objectifs, recherche fusionnée, planning des rappels, écrans
 ```
 
 ---
@@ -200,8 +204,9 @@ src/
   components/    écrans et UI (Auth, TodayScreen, DaySummary, WeightScreen, …)
   hooks/         accès aux données (useSession, useTargets, useFoodEntries, useWeights,
                  useFavorites, useRecents, useHistory, useWater, useProfile)
+  data/          base locale d'aliments bruts (aliments-base.ts)
   lib/           client Supabase, types, helpers de date, presets, Open Food Facts,
-                 répartition des macros
+                 fusion de recherche, répartition des macros
 public/          manifest, service worker (cache + Web Push), icônes
 supabase/
   migrations/    SQL à coller dans le SQL Editor
@@ -263,18 +268,42 @@ au lieu de laisser un interrupteur qui ne répond pas.
 Mise en service détaillée (clés VAPID, secrets, cron) :
 [`supabase/functions/send-reminders/README.md`](supabase/functions/send-reminders/README.md).
 
-## Open Food Facts
+## Recherche d'aliments
 
-La recherche d'aliments interroge [Open Food Facts](https://fr.openfoodfacts.org), base
-collaborative et gratuite, directement depuis le navigateur (`src/lib/openfoodfacts.ts`) —
-aucune clé, aucun proxy, rien à configurer.
+Deux sources, fusionnées, base locale en tête (`src/hooks/useFoodSearch.ts`) :
 
-Deux limites à connaître : les produits sans calories renseignées sont filtrés, et les
+- **Base locale** (`src/data/aliments-base.ts`) : ~79 aliments bruts courants — œufs,
+  viandes, poissons, féculents, légumineuses, laitiers, fruits, légumes, oléagineux, matières
+  grasses. Recherchée en mémoire à chaque frappe, sans debounce ni réseau : la réponse est
+  instantanée et ne dépend jamais de la connexion. C'est le socle fiable pour ce qu'on mange
+  le plus souvent — Open Food Facts est une base de produits *emballés*, mauvaise sur les
+  ingrédients de base (« poulet » y renvoie souvent rien, ou une marque au hasard).
+
+  Riz et pâtes distinguent explicitement **cru** et **cuit** — la densité calorique du sec au
+  cuit varie du simple au triple, source d'erreur fréquente sinon. Valeurs pour 100 g,
+  conformes aux ordres de grandeur Ciqual (ANSES) / USDA, reprises de leur consensus public
+  plutôt qu'extraites en direct de la base (à ajuster au besoin, ce sont des références, pas
+  une mesure de laboratoire).
+
+- **Open Food Facts** complète en parallèle (`src/lib/openfoodfacts.ts`), débouncé (400 ms).
+
+Un résultat OFF dont le nom coïncide déjà avec une entrée locale est écarté
+(`src/lib/foodSearch.ts`) ; chaque ligne affiche un badge `Base` ou `OFF`. **Une erreur ne
+s'affiche que si les deux sources n'ont rien trouvé** : un échec réseau derrière des
+résultats locaux ne remonte jamais comme une panne — c'est `useFoodSearch` qui applique
+cette règle, pas chaque écran qui l'appelle.
+
+Deux limites d'OFF à connaître : les produits sans calories renseignées sont filtrés, et les
 produits frais non emballés (viande au détail, légumes en vrac) y sont mal couverts. Pour
-ceux-là, la saisie manuelle reste le bon outil — et une fois saisis, ils remontent dans
-l'onglet Récents.
+ceux-là, la base locale ou la saisie manuelle restent le bon outil — et une fois saisis
+manuellement, ils remontent dans l'onglet Récents.
 
-Trois détails qui conditionnent la qualité des résultats :
+Un plafond de 6 s (`fetchProducts`) abandonne une requête qui pend plutôt que de bloquer
+l'UI indéfiniment, sans dépendre d'`AbortSignal.any` — absent avant iOS 17.4, alors que l'app
+cible 16.4+ pour le reste. Une réponse JSON tronquée ou vide ne fait pas non plus planter la
+recherche, un message clair remonte à la place.
+
+Trois détails qui conditionnent la qualité des résultats OFF :
 
 - Le paramètre `q` de l'API est interprété comme une **requête Lucene**. La saisie est donc
   débarrassée des opérateurs (`-`, `(`, `!`, `:`…) avant l'appel : sans ça le tiret de
