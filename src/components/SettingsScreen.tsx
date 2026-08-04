@@ -1,10 +1,11 @@
 import { useState } from 'react'
+import { IdentityCard } from './IdentityCard'
 import { ProfileSheet } from './ProfileSheet'
 import { PushSettings } from './PushSettings'
 import { TargetsSheet } from './TargetsSheet'
 import { supabase } from '../lib/supabase'
 import { ACTIVITY_LABELS, GOAL_LABELS, type Profile } from '../lib/nutrition'
-import type { TargetValues } from '../lib/types'
+import type { Identity, TargetValues } from '../lib/types'
 
 const ROWS: { key: keyof TargetValues; label: string; unit: string }[] = [
   { key: 'kcal', label: 'Calories', unit: 'kcal' },
@@ -22,12 +23,18 @@ export function SettingsScreen({
   email,
   targets,
   onSave,
+  userId,
+  identity,
+  onSaveIdentity,
   profile,
   onSaveProfile,
 }: {
   email: string | undefined
   targets: TargetValues
   onSave: (next: TargetValues) => Promise<void>
+  userId: string
+  identity: Identity
+  onSaveIdentity: (next: Partial<Identity>) => Promise<void>
   profile: Profile | null
   /** `nextTargets` absent = le profil change, les objectifs restent. */
   onSaveProfile: (profile: Profile, nextTargets?: TargetValues) => Promise<void>
@@ -38,6 +45,13 @@ export function SettingsScreen({
   return (
     <>
       <div className="space-y-3">
+        <IdentityCard
+          identity={identity}
+          email={email}
+          userId={userId}
+          onSave={onSaveIdentity}
+        />
+
         <section className="space-y-2">
           <h2 className="px-1 text-xs font-medium uppercase tracking-wide text-ink/40">
             Objectifs quotidiens

@@ -16,6 +16,10 @@ l'écran. Les objectifs et la déconnexion sont sur l'écran Réglages.
 
 **Écran « Aujourd'hui »**
 
+- **Profil** : prénom demandé à l'inscription (facultatif, il devient « Salut Clément » sur
+  l'écran du jour) et photo ajoutable depuis les Réglages. Le bloc identité vit en tête de
+  l'onglet Réglages plutôt qu'en haut à droite de l'écran : ce coin est le plus difficile à
+  atteindre au pouce, et l'onglet porte déjà tout ce qui touche au compte.
 - **Objectifs personnalisés** : à la première connexion, un onboarding demande le profil
   (sexe, âge, taille, poids, activité, objectif) et en déduit les besoins — Mifflin-St Jeor,
   facteur d'activité, puis écart selon l'objectif. Modifiables ensuite depuis Réglages →
@@ -94,11 +98,13 @@ npm test         # calcul des objectifs, recherche, planning des rappels, écran
    Recommencer **dans l'ordre** avec [`0002_favorites.sql`](supabase/migrations/0002_favorites.sql),
    [`0003_meals_water.sql`](supabase/migrations/0003_meals_water.sql),
    [`0004_water_increment.sql`](supabase/migrations/0004_water_increment.sql),
-   [`0005_push_subscriptions.sql`](supabase/migrations/0005_push_subscriptions.sql) et
-   [`0006_profile.sql`](supabase/migrations/0006_profile.sql).
+   [`0005_push_subscriptions.sql`](supabase/migrations/0005_push_subscriptions.sql),
+   [`0006_profile.sql`](supabase/migrations/0006_profile.sql) et
+   [`0007_profile_identity.sql`](supabase/migrations/0007_profile_identity.sql).
    Les scripts créent les tables (`targets`, `food_entries`, `weights`, `favorites`, `water`,
    `push_subscriptions`, `reminder_log`, `profile`), activent RLS et posent les policies :
    chaque ligne n'est lisible et modifiable que par son propriétaire (`user_id = auth.uid()`).
+   La dernière crée aussi le bucket de stockage `avatars`.
 
    Les migrations sont à rejouer **avant** de déployer le front correspondant : le build
    qui suit interroge les nouvelles colonnes.
@@ -223,6 +229,25 @@ total, et les anneaux afficheraient un objectif absurde.
 Ces valeurs sont une moyenne statistique, pas une mesure : l'app les présente comme un point
 de départ à ajuster selon ce que dit la balance, et le calcul ne s'impose jamais aux objectifs
 saisis à la main.
+
+## Photo de profil
+
+Les photos vivent dans le bucket Supabase Storage `avatars`, au chemin
+`<user_id>/avatar.jpg`. Les policies n'autorisent l'écriture que dans le dossier portant son
+propre identifiant ; **la lecture, elle, est publique** — l'URL est alors utilisable telle
+quelle dans un `<img>`, sans signature à renouveler. Le chemin contient un UUID non
+devinable, mais ce n'est pas un secret : ne pas y déposer autre chose qu'une photo qu'on
+accepterait de voir circuler.
+
+Deux détails qui comptent (`src/lib/avatar.ts`) :
+
+- **Redimensionnement côté client** avant l'envoi. Une photo d'iPhone pèse 3 à 5 Mo pour
+  4000 px de côté ; la servir telle quelle dans une pastille de 56 px gaspillerait la bande
+  passante à chaque ouverture, et l'envoi échouerait en 4G moyenne. Elle est recadrée en
+  carré et réduite à 512 px, en JPEG qualité 0.85.
+- **Jeton de version dans l'URL** (`?v=<timestamp>`). Le chemin ne changeant jamais, une
+  nouvelle photo garderait l'URL de l'ancienne et le navigateur continuerait d'afficher
+  celle en cache.
 
 ## Notifications planifiées
 

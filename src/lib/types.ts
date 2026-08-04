@@ -28,6 +28,16 @@ export type FoodEntry = {
   created_at: string
 }
 
+/**
+ * Qui l'on est, par opposition au gabarit qui sert au calcul. Les deux vivent
+ * dans la même ligne mais ne servent pas au même endroit : `Identity` ne doit
+ * jamais entrer dans une formule.
+ */
+export type Identity = {
+  first_name: string | null
+  avatar_url: string | null
+}
+
 /** Profil servant au calcul des objectifs. Une ligne par utilisateur. */
 export type ProfileRow = {
   user_id: string
@@ -40,7 +50,7 @@ export type ProfileRow = {
   onboarding_done: boolean
   created_at: string
   updated_at: string
-}
+} & Identity
 
 /** Abonnement Web Push d'un appareil — une ligne par navigateur installé. */
 export type PushSubscriptionRow = {
@@ -134,8 +144,15 @@ export type Database = {
       }
       profile: {
         Row: ProfileRow
-        Insert: Omit<ProfileRow, 'user_id' | 'created_at' | 'updated_at'> &
-          Partial<Pick<ProfileRow, 'user_id' | 'created_at' | 'updated_at'>>
+        // Le prénom et la photo restent facultatifs : on peut enregistrer un
+        // gabarit sans jamais renseigner l'un ni l'autre.
+        Insert: Omit<
+          ProfileRow,
+          'user_id' | 'created_at' | 'updated_at' | 'first_name' | 'avatar_url'
+        > &
+          Partial<
+            Pick<ProfileRow, 'user_id' | 'created_at' | 'updated_at' | 'first_name' | 'avatar_url'>
+          >
         Update: Partial<ProfileRow>
         Relationships: []
       }

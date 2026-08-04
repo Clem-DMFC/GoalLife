@@ -22,7 +22,14 @@ export default function App() {
   const { session, loading } = useSession()
   const userId = session?.user.id
   const { targets, save: saveTargets } = useTargets(userId)
-  const { profile, loading: profileLoading, onboardingDone, save: saveProfile } = useProfile(userId)
+  const {
+    profile,
+    identity,
+    loading: profileLoading,
+    onboardingDone,
+    save: saveProfile,
+    saveIdentity,
+  } = useProfile(userId)
 
   /*
    * Deep link d'une notification (`/?go=add&meal=diner`). Lu une seule fois,
@@ -67,12 +74,12 @@ export default function App() {
     return (
       <ToastProvider>
         <Onboarding
-          onDone={async (next, computed) => {
+          onDone={async (next, computed, firstName) => {
             // Les objectifs d'abord : si leur écriture échoue, l'onboarding
             // reste ouvert et le message s'affiche, plutôt que d'aboutir sur
             // un compte marqué configuré mais sans objectifs.
             await saveTargets(computed)
-            await saveProfile(next)
+            await saveProfile(next, { first_name: firstName })
           }}
         />
       </ToastProvider>
@@ -87,7 +94,11 @@ export default function App() {
             indique où l'on se trouve, et un logo répété n'apporterait rien. */}
           <div className="flex items-center gap-2 px-4 py-3">
             {tab === 'today' && <Logo size={22} className="text-protein" />}
-            <h1 className="text-lg font-bold tracking-tight">{TAB_TITLES[tab]}</h1>
+            <h1 className="text-lg font-bold tracking-tight">
+              {tab === 'today' && identity.first_name
+                ? `Salut ${identity.first_name}`
+                : TAB_TITLES[tab]}
+            </h1>
           </div>
         </header>
 
@@ -123,6 +134,9 @@ export default function App() {
               email={session.user.email}
               targets={targets}
               onSave={saveTargets}
+              userId={userId}
+              identity={identity}
+              onSaveIdentity={saveIdentity}
               profile={profile}
               onSaveProfile={async (next, nextTargets) => {
                 if (nextTargets) await saveTargets(nextTargets)

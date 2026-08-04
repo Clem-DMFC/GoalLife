@@ -13,8 +13,8 @@ import {
 } from '../lib/nutrition'
 import type { TargetValues } from '../lib/types'
 
-/** Les sept écrans, dans l'ordre. Un ou deux champs par écran, jamais plus. */
-const STEPS = ['sex', 'age', 'height', 'weight', 'activity', 'goal', 'recap'] as const
+/** Les huit écrans, dans l'ordre. Un ou deux champs par écran, jamais plus. */
+const STEPS = ['name', 'sex', 'age', 'height', 'weight', 'activity', 'goal', 'recap'] as const
 type Step = (typeof STEPS)[number]
 
 /** Valeurs de départ : un profil médian, pour n'avoir qu'à ajuster. */
@@ -65,9 +65,10 @@ export function Onboarding({
   onDone,
 }: {
   /** Enregistre le profil et les objectifs calculés, puis ouvre l'app. */
-  onDone: (profile: Profile, targets: TargetValues) => Promise<void>
+  onDone: (profile: Profile, targets: TargetValues, firstName: string | null) => Promise<void>
 }) {
-  const [step, setStep] = useState<Step>('sex')
+  const [step, setStep] = useState<Step>('name')
+  const [firstName, setFirstName] = useState('')
   const [sex, setSex] = useState<Sex | null>(null)
   const [activity, setActivity] = useState<Activity | null>(null)
   const [goal, setGoal] = useState<Goal | null>(null)
@@ -100,19 +101,22 @@ export function Onboarding({
   const computed = profile ? computeTargets(profile) : null
 
   const canContinue =
-    step === 'sex'
-      ? sex !== null
-      : step === 'age'
-        ? valid('age')
-        : step === 'height'
-          ? valid('height_cm')
-          : step === 'weight'
-            ? valid('weight_kg')
-            : step === 'activity'
-              ? activity !== null
-              : step === 'goal'
-                ? goal !== null
-                : profile !== null
+    // Le prénom est facultatif : on n'enferme personne sur le premier écran.
+    step === 'name'
+      ? true
+      : step === 'sex'
+        ? sex !== null
+        : step === 'age'
+          ? valid('age')
+          : step === 'height'
+            ? valid('height_cm')
+            : step === 'weight'
+              ? valid('weight_kg')
+              : step === 'activity'
+                ? activity !== null
+                : step === 'goal'
+                  ? goal !== null
+                  : profile !== null
 
   const next = () => setStep(STEPS[Math.min(index + 1, STEPS.length - 1)])
   const back = () => setStep(STEPS[Math.max(index - 1, 0)])
@@ -123,7 +127,8 @@ export function Onboarding({
     setError(null)
     try {
       const { bmr: _b, tdee: _t, floored: _f, ...targets } = computed
-      await onDone(profile, targets)
+      const name = firstName.trim()
+      await onDone(profile, targets, name === '' ? null : name.slice(0, 40))
     } catch (err) {
       setError(err instanceof Error ? err.message : "L'enregistrement a échoué.")
       setBusy(false)
@@ -175,9 +180,34 @@ export function Onboarding({
       </div>
 
       <div className="flex-1 overflow-y-auto px-5 pb-4 pt-6">
-        {step === 'sex' && (
+        {step === 'name' && (
           <>
             <h2 className="text-xl font-bold tracking-tight">Bienvenue</h2>
+            <p className="mt-1 text-[13px] leading-snug text-ink/50">
+              Comment veux-tu qu'on t'appelle ? Tu peux passer, et le renseigner plus tard
+              dans les réglages.
+            </p>
+            <input
+              className="field mt-6 text-center text-2xl"
+              value={firstName}
+              onChange={(e) => setFirstName(e.target.value)}
+              placeholder="Ton prénom"
+              aria-label="Ton prénom"
+              maxLength={40}
+              autoFocus
+              enterKeyHint="next"
+            />
+            <p className="mt-3 text-[11px] leading-snug text-ink/40">
+              La photo de profil s'ajoute depuis les réglages, une fois le compte ouvert.
+            </p>
+          </>
+        )}
+
+        {step === 'sex' && (
+          <>
+            <h2 className="text-xl font-bold tracking-tight">
+              {firstName.trim() ? `Enchanté ${firstName.trim()}` : 'Faisons connaissance'}
+            </h2>
             <p className="mt-1 text-[13px] leading-snug text-ink/50">
               Quelques questions pour estimer tes besoins. Tout reste modifiable ensuite.
             </p>
@@ -314,7 +344,13 @@ export function Onboarding({
           disabled={!canContinue || busy}
           onClick={() => (step === 'recap' ? void submit() : next())}
         >
-          {step === 'recap' ? (busy ? '…' : 'Valider') : 'Continuer'}
+          {step === 'recap'
+            ? busy
+              ? '…'
+              : 'Valider'
+            : step === 'name' && firstName.trim() === ''
+              ? 'Passer'
+              : 'Continuer'}
         </button>
       </div>
     </div>

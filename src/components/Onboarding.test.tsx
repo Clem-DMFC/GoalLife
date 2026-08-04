@@ -13,8 +13,10 @@ const click = (label: string | RegExp) =>
 const type = (label: string, value: string) =>
   act(() => void fireEvent.change(screen.getByLabelText(label), { target: { value } }))
 
-/** Parcourt les six premiers écrans pour un homme de 80 kg, actif modéré. */
-function walkToRecap() {
+/** Parcourt les sept premiers écrans pour un homme de 80 kg, actif modéré. */
+function walkToRecap(firstName = '') {
+  if (firstName) type('Ton prénom', firstName)
+  click(firstName ? 'Continuer' : 'Passer')
   click('Homme')
   click('Continuer')
   type('Ton âge', '30')
@@ -40,10 +42,10 @@ test('le parcours mène au récapitulatif et calcule les objectifs', () => {
   expect(screen.getByText('2759 kcal')).toBeDefined()
 })
 
-test('la validation remonte le profil et les objectifs, sans champs de calcul', async () => {
+test('la validation remonte le profil, les objectifs et le prénom', async () => {
   const onDone = vi.fn().mockResolvedValue(undefined)
   render(<Onboarding onDone={onDone} />)
-  walkToRecap()
+  walkToRecap('Clément')
 
   await act(async () => void fireEvent.click(screen.getByText('Valider')))
 
@@ -57,12 +59,43 @@ test('la validation remonte le profil et les objectifs, sans champs de calcul', 
       goal: 'maintien',
     },
     // `bmr`, `tdee` et `floored` servent à l'affichage, pas à la table.
-    { kcal: 2760, protein: 152, carbs: 376, fat: 72, water_ml: 3000 }
+    { kcal: 2760, protein: 152, carbs: 376, fat: 72, water_ml: 3000 },
+    'Clément'
   )
+})
+
+test('le prénom est facultatif : on peut passer l’écran', async () => {
+  const onDone = vi.fn().mockResolvedValue(undefined)
+  render(<Onboarding onDone={onDone} />)
+
+  // Sans saisie, le bouton propose de passer plutôt que de continuer.
+  expect(screen.getByText('Passer')).toBeDefined()
+  walkToRecap()
+  await act(async () => void fireEvent.click(screen.getByText('Valider')))
+
+  expect(onDone.mock.calls[0][2]).toBeNull()
+})
+
+test('le prénom saisi est repris à l’écran suivant', () => {
+  render(<Onboarding onDone={vi.fn()} />)
+  type('Ton prénom', 'Clément')
+  expect(screen.getByText('Continuer')).toBeDefined()
+  click('Continuer')
+  expect(screen.getByText('Enchanté Clément')).toBeDefined()
+})
+
+test('un prénom d’espaces vaut une absence de prénom', async () => {
+  const onDone = vi.fn().mockResolvedValue(undefined)
+  render(<Onboarding onDone={onDone} />)
+  type('Ton prénom', '   ')
+  walkToRecap()
+  await act(async () => void fireEvent.click(screen.getByText('Valider')))
+  expect(onDone.mock.calls[0][2]).toBeNull()
 })
 
 test('on ne peut pas avancer sans avoir répondu', () => {
   render(<Onboarding onDone={vi.fn()} />)
+  click('Passer')
   // Écran du sexe : aucun choix fait.
   expect(screen.getByText('Continuer').hasAttribute('disabled')).toBe(true)
   click('Femme')
@@ -71,6 +104,7 @@ test('on ne peut pas avancer sans avoir répondu', () => {
 
 test('une valeur hors bornes bloque et s’explique', () => {
   render(<Onboarding onDone={vi.fn()} />)
+  click('Passer')
   click('Homme')
   click('Continuer')
 
@@ -84,6 +118,7 @@ test('une valeur hors bornes bloque et s’explique', () => {
 
 test('le retour conserve les réponses déjà données', () => {
   render(<Onboarding onDone={vi.fn()} />)
+  click('Passer')
   click('Homme')
   click('Continuer')
   type('Ton âge', '42')
@@ -97,6 +132,7 @@ test('le retour conserve les réponses déjà données', () => {
 
 test('un petit gabarit en perte voit le plancher expliqué', () => {
   render(<Onboarding onDone={vi.fn()} />)
+  click('Passer')
   click('Femme')
   click('Continuer')
   type('Ton âge', '55')
