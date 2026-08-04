@@ -10,12 +10,18 @@ import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 
 const maybeSingle = vi.fn()
 const upsert = vi.fn()
+const update = vi.fn()
+const eq = vi.fn()
 
 vi.mock('../lib/supabase', () => ({
   supabase: {
     from: () => ({
       select: () => ({ maybeSingle }),
       upsert,
+      update: (...args: unknown[]) => {
+        update(...args)
+        return { eq }
+      },
     }),
   },
 }))
@@ -35,6 +41,8 @@ const ROW = {
 beforeEach(() => {
   maybeSingle.mockReset()
   upsert.mockReset().mockResolvedValue({ error: null })
+  update.mockReset()
+  eq.mockReset().mockResolvedValue({ error: null })
 })
 
 afterEach(() => vi.clearAllMocks())
@@ -138,5 +146,80 @@ describe('save', () => {
     ).rejects.toBeDefined()
 
     expect(result.current.onboardingDone).toBe(false)
+  })
+})
+
+describe('brief', () => {
+  test('lit le brief déjà stocké', async () => {
+    maybeSingle.mockResolvedValue({
+      data: { ...ROW, strategy_brief: 'Bonjour.', strategy_brief_generated_at: '2026-01-01' },
+      error: null,
+    })
+    const { result } = renderHook(() => useProfile('u1'))
+    await waitFor(() => expect(result.current.loading).toBe(false))
+
+    expect(result.current.brief).toEqual({
+      strategy_brief: 'Bonjour.',
+      strategy_brief_generated_at: '2026-01-01',
+    })
+  })
+
+  test('sans brief stocké, les deux champs sont null', async () => {
+    maybeSingle.mockResolvedValue({ data: ROW, error: null })
+    const { result } = renderHook(() => useProfile('u1'))
+    await waitFor(() => expect(result.current.loading).toBe(false))
+
+    expect(result.current.brief).toEqual({
+      strategy_brief: null,
+      strategy_brief_generated_at: null,
+    })
+  })
+
+  test('saveBrief met à jour la ligne existante, pas un upsert', async () => {
+    maybeSingle.mockResolvedValue({ data: ROW, error: null })
+    const { result } = renderHook(() => useProfile('u1'))
+    await waitFor(() => expect(result.current.loading).toBe(false))
+
+    await result.current.saveBrief('Nouveau brief.')
+
+    expect(update).toHaveBeenCalledWith(
+      expect.objectContaining({ strategy_brief: 'Nouveau brief.' })
+    )
+    expect(upsert).not.toHaveBeenCalled()
+    await waitFor(() => expect(result.current.brief.strategy_brief).toBe('Nouveau brief.'))
+  })
+
+  test('saveBrief horodate la génération à maintenant', async () => {
+    maybeSingle.mockResolvedValue({ data: ROW, error: null })
+    const { result } = renderHook(() => useProfile('u1'))
+    await waitFor(() => expect(result.current.loading).toBe(false))
+
+    await result.current.saveBrief('Texte.')
+
+    const call = update.mock.calls[0][0] as { strategy_brief_generated_at: string }
+    expect(new Date(call.strategy_brief_generated_at).getTime()).not.toBeNaN()
+  })
+
+  test('save (onboarding) peut poser le brief dans le même upsert', async () => {
+    maybeSingle.mockResolvedValue({ data: null, error: null })
+    const { result } = renderHook(() => useProfile('u1'))
+    await waitFor(() => expect(result.current.loading).toBe(false))
+
+    await result.current.save(
+      {
+        sex: 'homme',
+        age: 30,
+        height_cm: 180,
+        weight_kg: 80,
+        activity: 'modere',
+        goal: 'maintien',
+      },
+      { strategy_brief: 'Bienvenue.', strategy_brief_generated_at: '2026-01-01' }
+    )
+
+    expect(upsert).toHaveBeenCalledWith(
+      expect.objectContaining({ strategy_brief: 'Bienvenue.' })
+    )
+    expect(update).not.toHaveBeenCalled()
   })
 })

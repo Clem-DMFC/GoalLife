@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Logo } from './Logo'
 import { MacroBreakdown } from './MacroLine'
 import {
@@ -11,6 +11,7 @@ import {
   type Profile,
   type Sex,
 } from '../lib/nutrition'
+import { formatBrief, requestStrategyBrief } from '../lib/strategyBrief'
 import type { TargetValues } from '../lib/types'
 
 /** Les huit écrans, dans l'ordre. Un ou deux champs par écran, jamais plus. */
@@ -64,11 +65,23 @@ function Choice({
 export function Onboarding({
   onDone,
 }: {
-  /** Enregistre le profil et les objectifs calculés, puis ouvre l'app. */
-  onDone: (profile: Profile, targets: TargetValues, firstName: string | null) => Promise<void>
+  /**
+   * Enregistre le profil et les objectifs calculés, puis ouvre l'app. `brief`
+   * est celui déjà généré au moment de valider, ou `null` s'il n'a pas eu le
+   * temps d'arriver — l'onboarding ne l'attend jamais.
+   */
+  onDone: (
+    profile: Profile,
+    targets: TargetValues,
+    firstName: string | null,
+    brief: string | null
+  ) => Promise<void>
 }) {
   const [step, setStep] = useState<Step>('name')
   const [firstName, setFirstName] = useState('')
+  const [brief, setBrief] = useState<string | null>(null)
+  const [briefLoading, setBriefLoading] = useState(false)
+  const [briefError, setBriefError] = useState<string | null>(null)
   const [sex, setSex] = useState<Sex | null>(null)
   const [activity, setActivity] = useState<Activity | null>(null)
   const [goal, setGoal] = useState<Goal | null>(null)
@@ -100,6 +113,48 @@ export function Onboarding({
 
   const computed = profile ? computeTargets(profile) : null
 
+  /*
+   * Le brief se demande dès l'arrivée sur le récap, en parallèle de la
+   * lecture des chiffres — pas au clic sur Valider, qui bloquerait sinon
+   * l'onboarding sur un appel réseau facultatif. Redemandé si les chiffres
+   * changent (retour en arrière, ajustement), jamais si on quitte le récap.
+   * `requestId` évite qu'une réponse tardive d'un appel périmé (retour en
+   * arrière puis re-avance) n'écrase un résultat plus récent.
+   */
+  const requestId = useRef(0)
+  useEffect(() => {
+    if (step !== 'recap' || !profile || !computed) return
+    const id = ++requestId.current
+    setBrief(null)
+    setBriefError(null)
+    setBriefLoading(true)
+
+    requestStrategyBrief(profile, computed)
+      .then((result) => {
+        if (requestId.current !== id) return
+        setBrief(formatBrief(result))
+        setBriefLoading(false)
+      })
+      .catch((err: unknown) => {
+        if (requestId.current !== id) return
+        setBriefError(err instanceof Error ? err.message : 'Brief indisponible pour le moment.')
+        setBriefLoading(false)
+      })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    step,
+    profile?.sex,
+    profile?.age,
+    profile?.height_cm,
+    profile?.weight_kg,
+    profile?.activity,
+    profile?.goal,
+    computed?.kcal,
+    computed?.protein,
+    computed?.carbs,
+    computed?.fat,
+  ])
+
   const canContinue =
     // Le prénom est facultatif : on n'enferme personne sur le premier écran.
     step === 'name'
@@ -128,7 +183,9 @@ export function Onboarding({
     try {
       const { bmr: _b, tdee: _t, floored: _f, ...targets } = computed
       const name = firstName.trim()
-      await onDone(profile, targets, name === '' ? null : name.slice(0, 40))
+      // Le brief part s'il a eu le temps d'arriver ; sinon `null, sans
+      // attendre — il reste régénérable depuis les réglages ensuite.
+      await onDone(profile, targets, name === '' ? null : name.slice(0, 40), brief)
     } catch (err) {
       setError(err instanceof Error ? err.message : "L'enregistrement a échoué.")
       setBusy(false)
@@ -319,6 +376,38 @@ export function Onboarding({
                 relevé à ce seuil : en dessous, couvrir ses besoins devient difficile.
               </p>
             )}
+
+            {/* Bonus, jamais un prérequis : chargement discret, et un repli
+                silencieux si l'appel échoue — l'onboarding continue avec les
+                chiffres, qui eux ne dépendent de rien d'externe. */}
+            <div className="mt-3">
+              {briefLoading && (
+                <div className="card flex items-center gap-2 text-sm text-ink/40">
+                  <span
+                    aria-hidden
+                    className="h-3.5 w-3.5 shrink-0 animate-spin rounded-full border-2 border-ink/20 border-t-protein"
+                  />
+                  Ton coach prépare un mot sur ces chiffres…
+                </div>
+              )}
+
+              {!briefLoading && brief && (
+                <div className="card">
+                  <div className="text-[11px] font-medium uppercase tracking-wide text-protein">
+                    Le mot du coach
+                  </div>
+                  <p className="mt-1.5 whitespace-pre-line text-[13px] leading-relaxed">
+                    {brief}
+                  </p>
+                </div>
+              )}
+
+              {!briefLoading && !brief && briefError && (
+                <p className="px-1 text-[11px] leading-snug text-ink/35">
+                  Brief indisponible pour le moment.
+                </p>
+              )}
+            </div>
 
             <p className="mt-3 text-[11px] leading-snug text-ink/45">
               Ces chiffres sont un point de départ, pas une vérité : la formule estime une

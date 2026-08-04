@@ -38,6 +38,16 @@ export type Identity = {
   avatar_url: string | null
 }
 
+/**
+ * Le brief d'interprétation généré par l'IA : commente les chiffres, n'en
+ * calcule aucun. `text` null tant qu'il n'a jamais été généré ou que la
+ * génération a échoué — l'absence n'est jamais bloquante.
+ */
+export type StrategyBrief = {
+  strategy_brief: string | null
+  strategy_brief_generated_at: string | null
+}
+
 /** Profil servant au calcul des objectifs. Une ligne par utilisateur. */
 export type ProfileRow = {
   user_id: string
@@ -48,9 +58,11 @@ export type ProfileRow = {
   activity: Activity
   goal: Goal
   onboarding_done: boolean
+  consent_at: string | null
   created_at: string
   updated_at: string
-} & Identity
+} & Identity &
+  StrategyBrief
 
 /** Abonnement Web Push d'un appareil — une ligne par navigateur installé. */
 export type PushSubscriptionRow = {
@@ -144,14 +156,31 @@ export type Database = {
       }
       profile: {
         Row: ProfileRow
-        // Le prénom et la photo restent facultatifs : on peut enregistrer un
-        // gabarit sans jamais renseigner l'un ni l'autre.
+        // Le prénom, la photo, le consentement et le brief restent facultatifs :
+        // on peut enregistrer un gabarit sans jamais renseigner aucun des quatre.
         Insert: Omit<
           ProfileRow,
-          'user_id' | 'created_at' | 'updated_at' | 'first_name' | 'avatar_url'
+          | 'user_id'
+          | 'created_at'
+          | 'updated_at'
+          | 'first_name'
+          | 'avatar_url'
+          | 'consent_at'
+          | 'strategy_brief'
+          | 'strategy_brief_generated_at'
         > &
           Partial<
-            Pick<ProfileRow, 'user_id' | 'created_at' | 'updated_at' | 'first_name' | 'avatar_url'>
+            Pick<
+              ProfileRow,
+              | 'user_id'
+              | 'created_at'
+              | 'updated_at'
+              | 'first_name'
+              | 'avatar_url'
+              | 'consent_at'
+              | 'strategy_brief'
+              | 'strategy_brief_generated_at'
+            >
           >
         Update: Partial<ProfileRow>
         Relationships: []

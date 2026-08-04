@@ -5,9 +5,12 @@ import { ProfileSheet } from './ProfileSheet'
 import { PushSettings } from './PushSettings'
 import { TargetsSheet } from './TargetsSheet'
 import { supabase } from '../lib/supabase'
-import { ACTIVITY_LABELS, GOAL_LABELS, type Profile } from '../lib/nutrition'
+import { deleteAccount } from '../lib/accountDeletion'
+import { ACTIVITY_LABELS, computeTargets, GOAL_LABELS, type Profile } from '../lib/nutrition'
+import { buildUserDataExport, downloadUserDataExport } from '../lib/dataExport'
 import { isStandalone } from '../lib/pwaInstall'
-import type { Identity, TargetValues } from '../lib/types'
+import { formatBrief, requestStrategyBrief } from '../lib/strategyBrief'
+import type { Identity, StrategyBrief, TargetValues } from '../lib/types'
 
 const ROWS: { key: keyof TargetValues; label: string; unit: string }[] = [
   { key: 'kcal', label: 'Calories', unit: 'kcal' },
@@ -30,6 +33,8 @@ export function SettingsScreen({
   onSaveIdentity,
   profile,
   onSaveProfile,
+  brief,
+  onSaveBrief,
 }: {
   email: string | undefined
   targets: TargetValues
@@ -40,10 +45,63 @@ export function SettingsScreen({
   profile: Profile | null
   /** `nextTargets` absent = le profil change, les objectifs restent. */
   onSaveProfile: (profile: Profile, nextTargets?: TargetValues) => Promise<void>
+  brief: StrategyBrief
+  onSaveBrief: (text: string) => Promise<void>
 }) {
   const [editing, setEditing] = useState(false)
   const [editingProfile, setEditingProfile] = useState(false)
   const [installing, setInstalling] = useState(false)
+  const [regenerating, setRegenerating] = useState(false)
+  const [regenError, setRegenError] = useState<string | null>(null)
+  const [exporting, setExporting] = useState(false)
+  const [exportError, setExportError] = useState<string | null>(null)
+  const [confirmingDelete, setConfirmingDelete] = useState(false)
+  const [deleting, setDeleting] = useState(false)
+  const [deleteError, setDeleteError] = useState<string | null>(null)
+
+  const regenerate = async () => {
+    if (!profile || regenerating) return
+    setRegenerating(true)
+    setRegenError(null)
+    try {
+      const computed = computeTargets(profile, targets)
+      const result = await requestStrategyBrief(profile, computed)
+      await onSaveBrief(formatBrief(result))
+    } catch (err) {
+      setRegenError(err instanceof Error ? err.message : 'Brief indisponible pour le moment.')
+    } finally {
+      setRegenerating(false)
+    }
+  }
+
+  const handleExport = async () => {
+    if (exporting) return
+    setExporting(true)
+    setExportError(null)
+    try {
+      const payload = await buildUserDataExport(userId, email ?? null)
+      downloadUserDataExport(payload)
+    } catch (err) {
+      setExportError(err instanceof Error ? err.message : "L'export a échoué.")
+    } finally {
+      setExporting(false)
+    }
+  }
+
+  const handleDelete = async () => {
+    if (deleting) return
+    setDeleting(true)
+    setDeleteError(null)
+    try {
+      await deleteAccount()
+      // Le compte n'existe plus côté serveur : la session locale doit
+      // tomber tout de suite, sans attendre un prochain appel en échec.
+      await supabase.auth.signOut()
+    } catch (err) {
+      setDeleteError(err instanceof Error ? err.message : 'La suppression a échoué.')
+      setDeleting(false)
+    }
+  }
 
   return (
     <>
@@ -110,6 +168,43 @@ export function SettingsScreen({
           >
             {profile ? 'Modifier mon profil' : 'Renseigner mon profil'}
           </button>
+
+          {profile && (
+            <>
+              {brief.strategy_brief && !regenerating && (
+                <div className="card">
+                  <div className="text-[11px] font-medium uppercase tracking-wide text-protein">
+                    Le mot du coach
+                  </div>
+                  <p className="mt-1.5 whitespace-pre-line text-[13px] leading-relaxed">
+                    {brief.strategy_brief}
+                  </p>
+                </div>
+              )}
+              {regenerating && (
+                <div className="card flex items-center gap-2 text-sm text-ink/40">
+                  <span
+                    aria-hidden
+                    className="h-3.5 w-3.5 shrink-0 animate-spin rounded-full border-2 border-ink/20 border-t-protein"
+                  />
+                  Ton coach prépare un mot sur ces chiffres…
+                </div>
+              )}
+              {!regenerating && regenError && (
+                <p className="px-1 text-[11px] leading-snug text-ink/35">
+                  Brief indisponible pour le moment.
+                </p>
+              )}
+              <button
+                type="button"
+                className="btn-ghost w-full py-3 text-sm"
+                disabled={regenerating}
+                onClick={() => void regenerate()}
+              >
+                {brief.strategy_brief ? 'Régénérer le brief' : 'Générer un brief'}
+              </button>
+            </>
+          )}
         </section>
 
         <PushSettings />
@@ -128,6 +223,61 @@ export function SettingsScreen({
             </button>
           </section>
         )}
+
+        <section className="space-y-2">
+          <h2 className="px-1 text-xs font-medium uppercase tracking-wide text-ink/40">
+            Confidentialité
+          </h2>
+          <div className="card text-[12px] leading-relaxed text-ink/50">
+            Exporte une copie de toutes tes données (profil, objectifs, repas, poids, eau,
+            favoris, brief) au format JSON.
+          </div>
+          {exportError && <p className="px-1 text-[11px] leading-snug text-danger">{exportError}</p>}
+          <button
+            type="button"
+            className="btn-ghost w-full py-3"
+            disabled={exporting}
+            onClick={() => void handleExport()}
+          >
+            {exporting ? 'Préparation…' : 'Exporter mes données'}
+          </button>
+
+          {confirmingDelete ? (
+            <div className="card space-y-3">
+              <p className="text-[12px] leading-snug text-danger">
+                Cette action est irréversible : ton profil, tes objectifs, tes repas, tes poids
+                et tes favoris seront définitivement effacés, ainsi que ton compte.
+              </p>
+              {deleteError && <p className="text-[12px] text-danger">{deleteError}</p>}
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  className="btn-ghost flex-1 py-3 text-sm"
+                  onClick={() => setConfirmingDelete(false)}
+                  disabled={deleting}
+                >
+                  Annuler
+                </button>
+                <button
+                  type="button"
+                  className="btn-primary flex-1 py-3 text-sm !bg-danger !text-white"
+                  onClick={() => void handleDelete()}
+                  disabled={deleting}
+                >
+                  {deleting ? '…' : 'Confirmer la suppression'}
+                </button>
+              </div>
+            </div>
+          ) : (
+            <button
+              type="button"
+              className="btn-ghost w-full py-3 text-danger"
+              onClick={() => setConfirmingDelete(true)}
+            >
+              Supprimer mon compte et mes données
+            </button>
+          )}
+        </section>
 
         <section className="space-y-2">
           <h2 className="px-1 text-xs font-medium uppercase tracking-wide text-ink/40">Compte</h2>
@@ -155,6 +305,7 @@ export function SettingsScreen({
           targets={targets}
           onClose={() => setEditingProfile(false)}
           onSave={onSaveProfile}
+          onSaveBrief={onSaveBrief}
         />
       )}
 

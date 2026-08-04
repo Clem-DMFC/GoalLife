@@ -11,6 +11,7 @@ import {
   type Profile,
   type Sex,
 } from '../lib/nutrition'
+import { formatBrief, requestStrategyBrief } from '../lib/strategyBrief'
 import type { TargetValues } from '../lib/types'
 
 const RANGES = {
@@ -31,12 +32,15 @@ export function ProfileSheet({
   targets,
   onClose,
   onSave,
+  onSaveBrief,
 }: {
   profile: Profile | null
   targets: TargetValues
   onClose: () => void
   /** `nextTargets` absent = on garde les objectifs actuels. */
   onSave: (profile: Profile, nextTargets?: TargetValues) => Promise<void>
+  /** Regénération du brief, en tâche de fond : jamais un prérequis à l'enregistrement. */
+  onSaveBrief: (text: string) => Promise<void>
 }) {
   const [sex, setSex] = useState<Sex>(profile?.sex ?? 'homme')
   const [activity, setActivity] = useState<Activity>(profile?.activity ?? 'modere')
@@ -87,6 +91,11 @@ export function ProfileSheet({
       if (withTargets) {
         const { bmr: _b, tdee: _t, floored: _f, ...values } = computed
         await onSave(next, values)
+        // Le brief commente les nouveaux chiffres, mais n'a pas à retarder
+        // la fermeture de la feuille : un échec ici reste silencieux.
+        requestStrategyBrief(next, computed)
+          .then((result) => onSaveBrief(formatBrief(result)))
+          .catch(() => {})
       } else {
         await onSave(next)
       }

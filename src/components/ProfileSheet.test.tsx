@@ -1,8 +1,22 @@
 import { render, screen, act, cleanup, fireEvent } from '@testing-library/react'
-import { afterEach, expect, test, vi } from 'vitest'
+import { afterEach, beforeEach, expect, test, vi } from 'vitest'
 import { ProfileSheet } from './ProfileSheet'
+import { requestStrategyBrief } from '../lib/strategyBrief'
 import type { Profile } from '../lib/nutrition'
 import type { TargetValues } from '../lib/types'
+
+vi.mock('../lib/strategyBrief', async () => {
+  const actual =
+    await vi.importActual<typeof import('../lib/strategyBrief')>('../lib/strategyBrief')
+  return { ...actual, requestStrategyBrief: vi.fn() }
+})
+
+const mockedBrief = vi.mocked(requestStrategyBrief)
+
+beforeEach(() => {
+  mockedBrief.mockReset()
+  mockedBrief.mockResolvedValue({ message: 'Un conseil.', focusPoints: [] })
+})
 
 afterEach(() => {
   cleanup()
@@ -33,10 +47,17 @@ const TUNED: TargetValues = { kcal: 2400, protein: 170, carbs: 250, fat: 70, wat
 function setup(targets: TargetValues, profile: Profile | null = PROFILE) {
   const onSave = vi.fn().mockResolvedValue(undefined)
   const onClose = vi.fn()
+  const onSaveBrief = vi.fn().mockResolvedValue(undefined)
   render(
-    <ProfileSheet profile={profile} targets={targets} onClose={onClose} onSave={onSave} />
+    <ProfileSheet
+      profile={profile}
+      targets={targets}
+      onClose={onClose}
+      onSave={onSave}
+      onSaveBrief={onSaveBrief}
+    />
   )
-  return { onSave, onClose }
+  return { onSave, onClose, onSaveBrief }
 }
 
 const click = (label: string | RegExp) =>
@@ -126,4 +147,33 @@ test('sans profil, la feuille s’ouvre sur des valeurs de départ', () => {
   setup(MATCHING, null)
   expect((screen.getByLabelText('Âge') as HTMLInputElement).value).toBe('30')
   expect(screen.getByText('Enregistrer le profil seul').hasAttribute('disabled')).toBe(false)
+})
+
+test('recalculer les objectifs régénère le brief, en tâche de fond', async () => {
+  const { onSaveBrief } = setup(TUNED)
+  click('Enregistrer et recalculer les objectifs')
+  await act(async () => void fireEvent.click(screen.getByText('Remplacer')))
+
+  expect(mockedBrief).toHaveBeenCalledWith(PROFILE, expect.objectContaining({ kcal: 2760 }))
+  await act(async () => {})
+  expect(onSaveBrief).toHaveBeenCalledWith('Un conseil.')
+})
+
+test('enregistrer le profil seul ne régénère pas le brief', async () => {
+  const { onSaveBrief } = setup(TUNED)
+  await act(async () => void fireEvent.click(screen.getByText('Enregistrer le profil seul')))
+
+  expect(mockedBrief).not.toHaveBeenCalled()
+  expect(onSaveBrief).not.toHaveBeenCalled()
+})
+
+test('un échec du brief après recalcul reste silencieux', async () => {
+  mockedBrief.mockRejectedValue(new Error('panne'))
+  const { onSave, onClose } = setup(TUNED)
+  click('Enregistrer et recalculer les objectifs')
+  await act(async () => void fireEvent.click(screen.getByText('Remplacer')))
+
+  // Les objectifs sont bien enregistrés et la feuille se ferme malgré l'échec du brief.
+  expect(onSave).toHaveBeenCalled()
+  expect(onClose).toHaveBeenCalled()
 })

@@ -1,8 +1,16 @@
 import { useState } from 'react'
 import { Logo } from './Logo'
+import { PrivacyPolicySheet } from './PrivacyPolicySheet'
 import { supabase } from '../lib/supabase'
 
 type Step = 'email' | 'code'
+
+/**
+ * Une fois donné sur cet appareil, le consentement n'a pas à être redemandé
+ * à chaque connexion : seule une première inscription (ou un nouvel appareil)
+ * le pose à nouveau.
+ */
+const CONSENT_KEY = 'goallife.consentGiven'
 
 /**
  * Connexion par code à 6 chiffres (OTP) reçu par email.
@@ -14,12 +22,17 @@ export function Auth() {
   const [code, setCode] = useState('')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [consented, setConsented] = useState(
+    () => localStorage.getItem(CONSENT_KEY) === '1'
+  )
+  const [showPolicy, setShowPolicy] = useState(false)
 
   const sendCode = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (busy) return
+    if (busy || !consented) return
     setBusy(true)
     setError(null)
+    localStorage.setItem(CONSENT_KEY, '1')
     const { error } = await supabase.auth.signInWithOtp({
       email: email.trim(),
       options: { shouldCreateUser: true },
@@ -75,10 +88,29 @@ export function Auth() {
                 required
               />
             </div>
+            <label className="flex items-start gap-2 px-1 text-xs text-ink/60">
+              <input
+                type="checkbox"
+                className="mt-0.5 h-4 w-4 shrink-0 accent-accent"
+                checked={consented}
+                onChange={(e) => setConsented(e.target.checked)}
+              />
+              <span>
+                J'accepte le traitement de mes données décrit dans la{' '}
+                <button
+                  type="button"
+                  className="underline underline-offset-2"
+                  onClick={() => setShowPolicy(true)}
+                >
+                  politique de confidentialité
+                </button>
+                .
+              </span>
+            </label>
             <button
               type="submit"
               className="btn-primary w-full py-3.5"
-              disabled={busy || !email.trim()}
+              disabled={busy || !email.trim() || !consented}
             >
               {busy ? 'Envoi…' : 'Recevoir un code'}
             </button>
@@ -131,6 +163,8 @@ export function Auth() {
 
         {error && <p className="mt-4 text-center text-sm text-danger">{error}</p>}
       </div>
+
+      {showPolicy && <PrivacyPolicySheet onClose={() => setShowPolicy(false)} />}
     </div>
   )
 }

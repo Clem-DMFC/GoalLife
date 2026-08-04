@@ -1,6 +1,22 @@
-import { render, screen, act, cleanup, fireEvent } from '@testing-library/react'
-import { afterEach, expect, test, vi } from 'vitest'
+import { render, screen, act, cleanup, fireEvent, waitFor } from '@testing-library/react'
+import { afterEach, beforeEach, expect, test, vi } from 'vitest'
 import { Onboarding } from './Onboarding'
+import { requestStrategyBrief } from '../lib/strategyBrief'
+
+vi.mock('../lib/strategyBrief', async () => {
+  const actual =
+    await vi.importActual<typeof import('../lib/strategyBrief')>('../lib/strategyBrief')
+  return { ...actual, requestStrategyBrief: vi.fn() }
+})
+
+const mockedBrief = vi.mocked(requestStrategyBrief)
+
+beforeEach(() => {
+  mockedBrief.mockReset()
+  // Résolution immédiate par défaut : les tests qui ne s'intéressent pas au
+  // brief n'ont pas à en tenir compte pour autant.
+  mockedBrief.mockResolvedValue({ message: 'Un conseil du coach.', focusPoints: [] })
+})
 
 afterEach(() => {
   cleanup()
@@ -42,11 +58,13 @@ test('le parcours mène au récapitulatif et calcule les objectifs', () => {
   expect(screen.getByText('2759 kcal')).toBeDefined()
 })
 
-test('la validation remonte le profil, les objectifs et le prénom', async () => {
+test('la validation remonte le profil, les objectifs, le prénom et le brief', async () => {
   const onDone = vi.fn().mockResolvedValue(undefined)
   render(<Onboarding onDone={onDone} />)
   walkToRecap('Clément')
 
+  // Le brief a le temps d'arriver avant qu'on valide.
+  await waitFor(() => expect(screen.getByText('Un conseil du coach.')).toBeDefined())
   await act(async () => void fireEvent.click(screen.getByText('Valider')))
 
   expect(onDone).toHaveBeenCalledWith(
@@ -60,7 +78,8 @@ test('la validation remonte le profil, les objectifs et le prénom', async () =>
     },
     // `bmr`, `tdee` et `floored` servent à l'affichage, pas à la table.
     { kcal: 2760, protein: 152, carbs: 376, fat: 72, water_ml: 3000 },
-    'Clément'
+    'Clément',
+    'Un conseil du coach.'
   )
 })
 
@@ -71,6 +90,7 @@ test('le prénom est facultatif : on peut passer l’écran', async () => {
   // Sans saisie, le bouton propose de passer plutôt que de continuer.
   expect(screen.getByText('Passer')).toBeDefined()
   walkToRecap()
+  await waitFor(() => expect(screen.getByText('Un conseil du coach.')).toBeDefined())
   await act(async () => void fireEvent.click(screen.getByText('Valider')))
 
   expect(onDone.mock.calls[0][2]).toBeNull()
@@ -89,6 +109,7 @@ test('un prénom d’espaces vaut une absence de prénom', async () => {
   render(<Onboarding onDone={onDone} />)
   type('Ton prénom', '   ')
   walkToRecap()
+  await waitFor(() => expect(screen.getByText('Un conseil du coach.')).toBeDefined())
   await act(async () => void fireEvent.click(screen.getByText('Valider')))
   expect(onDone.mock.calls[0][2]).toBeNull()
 })
@@ -166,4 +187,85 @@ test('le ton du récapitulatif présente un point de départ, pas une vérité',
   render(<Onboarding onDone={vi.fn()} />)
   walkToRecap()
   expect(screen.getByText(/point de départ, pas une vérité/)).toBeDefined()
+})
+
+// --- Brief IA ---------------------------------------------------------
+
+test('un chargement s’affiche pendant la génération du brief', async () => {
+  let resolve!: (v: { message: string; focusPoints: string[] }) => void
+  mockedBrief.mockReturnValue(new Promise((r) => (resolve = r)))
+
+  render(<Onboarding onDone={vi.fn()} />)
+  walkToRecap()
+
+  expect(screen.getByText(/prépare un mot/)).toBeDefined()
+  await act(async () => resolve({ message: 'Voilà.', focusPoints: [] }))
+  expect(screen.queryByText(/prépare un mot/)).toBeNull()
+  expect(screen.getByText('Voilà.')).toBeDefined()
+})
+
+test('les priorités s’affichent sous le message', async () => {
+  mockedBrief.mockResolvedValue({
+    message: 'Voilà le fond.',
+    focusPoints: ['Dors plus', 'Bois de l’eau'],
+  })
+
+  render(<Onboarding onDone={vi.fn()} />)
+  walkToRecap()
+
+  await waitFor(() => expect(screen.getByText(/Voilà le fond/)).toBeDefined())
+  expect(screen.getByText(/Dors plus/)).toBeDefined()
+  expect(screen.getByText(/Bois de l’eau/)).toBeDefined()
+})
+
+test('un échec du brief affiche un repli discret, sans bloquer le flux', async () => {
+  const onDone = vi.fn().mockResolvedValue(undefined)
+  mockedBrief.mockRejectedValue(new Error('panne réseau'))
+
+  render(<Onboarding onDone={onDone} />)
+  walkToRecap()
+
+  await waitFor(() => expect(screen.getByText('Brief indisponible pour le moment.')).toBeDefined())
+  // Le message d'erreur brut du réseau ne doit jamais s'afficher tel quel.
+  expect(screen.queryByText('panne réseau')).toBeNull()
+
+  // L'onboarding se termine quand même, sans brief.
+  await act(async () => void fireEvent.click(screen.getByText('Valider')))
+  expect(onDone).toHaveBeenCalledWith(
+    expect.anything(),
+    expect.anything(),
+    null,
+    null
+  )
+})
+
+test('valider avant la fin de la génération n’attend pas le brief', async () => {
+  const onDone = vi.fn().mockResolvedValue(undefined)
+  mockedBrief.mockReturnValue(new Promise(() => {})) // ne répond jamais
+
+  render(<Onboarding onDone={onDone} />)
+  walkToRecap()
+
+  // Le chargement est visible, mais Valider reste actionnable tout de suite.
+  expect(screen.getByText(/prépare un mot/)).toBeDefined()
+  await act(async () => void fireEvent.click(screen.getByText('Valider')))
+
+  expect(onDone).toHaveBeenCalledWith(
+    expect.anything(),
+    expect.anything(),
+    null,
+    null
+  )
+})
+
+test('changer un chiffre après le récap régénère le brief', async () => {
+  render(<Onboarding onDone={vi.fn()} />)
+  walkToRecap()
+  await waitFor(() => expect(mockedBrief).toHaveBeenCalledTimes(1))
+
+  click('Retour') // sur « Ton objectif »
+  click('Perte de gras')
+  click('Continuer') // retour au récap, avec un objectif différent
+
+  await waitFor(() => expect(mockedBrief).toHaveBeenCalledTimes(2))
 })

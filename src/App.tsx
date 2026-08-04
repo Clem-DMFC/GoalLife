@@ -28,10 +28,12 @@ export default function App() {
   const {
     profile,
     identity,
+    brief,
     loading: profileLoading,
     onboardingDone,
     save: saveProfile,
     saveIdentity,
+    saveBrief,
   } = useProfile(userId)
 
   /*
@@ -94,12 +96,21 @@ export default function App() {
     return (
       <ToastProvider>
         <Onboarding
-          onDone={async (next, computed, firstName) => {
+          onDone={async (next, computed, firstName, brief) => {
             // Les objectifs d'abord : si leur écriture échoue, l'onboarding
             // reste ouvert et le message s'affiche, plutôt que d'aboutir sur
             // un compte marqué configuré mais sans objectifs.
             await saveTargets(computed)
-            await saveProfile(next, { first_name: firstName })
+            await saveProfile(next, {
+              first_name: firstName,
+              // Approximation posée : l'onboarding est le seul point de
+              // passage garanti après l'inscription, la case cochée à
+              // l'écran de connexion ne l'est qu'une fois, en amont.
+              consent_at: new Date().toISOString(),
+              ...(brief
+                ? { strategy_brief: brief, strategy_brief_generated_at: new Date().toISOString() }
+                : {}),
+            })
           }}
         />
       </ToastProvider>
@@ -161,6 +172,8 @@ export default function App() {
                 if (nextTargets) await saveTargets(nextTargets)
                 await saveProfile(next)
               }}
+              brief={brief}
+              onSaveBrief={saveBrief}
             />
           )}
         </main>
